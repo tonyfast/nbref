@@ -1,0 +1,3660 @@
+
+<!-- activity log keeps one control panel for visiblity -->
+<!-- the notebook needs to be able to update itself to load a notebook client side -->
+<html>
+<head>
+<title>untitled</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="" name="description"/>
+<meta content="" name="author"/>
+<meta content="" name="keywords"/>
+<meta content="" name="created_at"/>
+<meta content="" name="updated_at"/>
+<meta content="Custom Notebook Renderer" name="generator"/>
+<meta content="1.0.0" name="generator_version"/>
+<meta content="notebook" name="format"/>
+<meta content="untitled" property="og:title"/>
+<meta content="" property="og:description"/>
+<meta content="article" property="og:type"/>
+<meta content="" property="og:url"/>
+<meta content="" property="og:image"/>
+<meta content="en_US" property="og:locale"/>
+<meta content="Notebook Renderer" property="og:site_name"/>
+<meta content="" property="og:updated_time"/>
+<meta content="" property="og:created_time"/>
+<meta content="" property="og:author"/>
+<meta content="" property="og:keywords"/>
+</head>
+<body class="">
+<header>
+<menu>
+<li>
+<a accesskey="(" class="skip" href="#MAIN">skip to main </a>
+</li>
+<li>
+<a accesskey=")" class="skip" href="#BOTTOM">skip to bottom</a>`
+                </li>
+</menu>
+<menu>
+<li class="brand">
+<a href="#"><img alt="nothing"/></a>
+</li>
+<li class="settings">
+<a accesskey="," aria-controls="settings:dialog" href="#" onclick="this.ariaControlsElements.forEach(toggleDialog)" role="button">settings</a>
+</li>
+</menu>
+</header>
+<main id="MAIN">
+<nav class="site">
+<!-- the site navigation -->
+<details class="site" data-entries="0">
+<summary>site</summary>
+<ol></ol>
+</details>
+</nav>
+<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="nb:region">
+<form class="nb" id="nb" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup>
+<h1 id="title"><slot name="title">untitled</slot></h1>
+<p id="description"><slot name="description"></slot></p>
+</hgroup>
+<!-- edit-only run-only -->
+<dl class="metadata known edit-only">
+<dt class="title">
+<label for="nb:metadata:title">title</label>
+</dt>
+<dd class="title">
+<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
+</dd>
+<dt class="description">
+<label for="nb:metadata:description">description</label>
+</dt>
+<dd class="description">
+<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
+</dd>
+</dl>
+<dl class="metadata known">
+<dt class="updated_at empty">updated at</dt>
+<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
+<dt class="created_at empty">created at</dt>
+<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
+<dt class="author" data-authors="0">
+<label id="nb:metadata:authors">author<span class="plural">s</span></label>
+</dt>
+</dl>
+<details class="metadata unknown edit-only">
+<summary>metadata</summary>
+<dl class="metadata unknown">
+<dt class="language_info">
+<label for="nb:metadata:language_info">language_info</label>
+</dt>
+<dd class="language_info">
+<input id="nb:metadata:language_info" name="language_info" readonly="" tabindex="-1" type="text" value="{'name': 'python'}"/>
+</dd>
+</dl>
+</details>
+<details class="summary" open="">
+<summary>summary</summary>
+<dl>
+<dt>statistics</dt>
+<dd class="statistics flex row">
+<span><slot name="cells_length">2</slot></span>
+<label>cells</label>
+<menu role="toolbar">
+<li class="execution">
+<select name="execution" readonly="" tabindex="-1">
+<option value="executed">executed</option>
+<option value="unexecuted">unexecuted</option>
+<option value="partially executed">partial executed</option>
+</select>
+</li>
+<li class="success">
+<select name="success" readonly="" tabindex="-1">
+<option value="successfully">successfully</option>
+<option value="unsuccessfully">unsuccessfully</option>
+</select>
+</li>
+<li class="order">
+<select name="order" readonly="" tabindex="-1">
+<option value="in uniform order">in uniform order</option>
+<option value="in order">in order</option>
+<option value="out of order">out of order</option>
+</select>
+</li>
+</menu>
+</dd>
+<dt>headings</dt>
+<dd><nav class="cells headings">
+<menu role="toolbar">
+<li>
+<label>
+<input name="show_cells" type="checkbox"/>
+                                show cells
+                            </label>
+</li>
+<li>
+<label>
+<input checked="" name="show_headings" type="checkbox"/>
+                                show headings
+                            </label>
+</li>
+</menu>
+<dl class="nav headings">
+<dt data-cell="1">
+<a href="#cell:1">
+                                cell 1        
+                            </a>
+</dt><dd data-level="1"><a href="#settings">settings</a></dd><dd data-level="1"><a href="#reference-notebook-documentation">reference notebook documentation</a></dd>
+<dt data-cell="2">
+<a href="#cell:2">
+                                cell 2        
+                            </a>
+</dt><dd data-level="2"><a href="#accesssibility-settings">accesssibility settings</a></dd>
+</dl>
+</nav></dd></dl></details>
+
+<dt>layout</dt>
+<dd class="layout">
+<menu role="toolbar">
+<dl class="layout flex row" role="group">
+<dt>mode</dt>
+<dd>
+<label>
+<span class="label">mode</span>
+<select aria-controls="nb:region" name="mode" onchange="toggleClass(event);">
+<option selected="" value="read-mode">read mode</option>
+<option value="run-mode">run mode</option>
+<option value="edit-mode">edit mode</option>
+<option value="select-mode">select mode</option>
+</select>
+</label>
+<dt class="nv">horizontal layout</dt>
+<dd>
+<select name="horizontal">
+<option value="">compact</option>
+<option value="wide">wide</option>
+</select>
+</dd>
+<dt>columns</dt>
+<dd>
+<input name="columns" type="number" value="1"/>
+</dd>
+<dt>reverse</dt>
+<dd><input name="reverse" type="checkbox"/></dd>
+<dt>orientation</dt>
+<dd>
+<select aria-controls="nb:region" name="orientation" onchange="toggleClass(event)">
+<option value="">input above output</option>
+<option value="out-in">input below output</option>
+<option value="ltr">input left of output</option>
+<option value="rtl">input right of output</option>
+<option value="no-outputs">input only</option>
+<option value="no-source">output only</option>
+</select>
+</dd>
+</dd></dl>
+</menu>
+</dd>
+
+
+<script class="action">
+            //- html element actions that inputs can perform
+        </script>
+<menu class="" role="toolbar">
+<li class="run run-only">
+<button type="submit">run selected cells</button>
+</li>
+</menu>
+</form>
+<script class="metadata" type="application/json">{"language_info": {"name": "python"}}</script>
+<!-- paginate and layout interface goes here -->
+<ol aria-multiselectable="false" aria-setsize="2" class="cells">
+<li aria-posinset="1" class="cell markdown" id="cell:1">
+<section class="cell markdown text/markdown" data-execution-count="-1" data-outputs="0" data-sloc="">
+<form class="cell metadata" id="9c679b04-7063-4935-86bb-2152b25f7919" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">1</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#1">
+<span class="cell label nv">cell </span>
+<slot name="index">1</slot>
+</a>
+</li>
+<li class="current"><input form="nb" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="nb" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="nb" hidden="" name="cells" value="9c679b04-7063-4935-86bb-2152b25f7919"/>
+<input name="id" value="9c679b04-7063-4935-86bb-2152b25f7919"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option value="code">code</option>
+<option selected="" value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" selected="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="-1"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="3"># reference notebook documentation
+
+notebook templates build from aria and pour accessibility principles.</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight"><span class="gh"># reference notebook documentation</span>
+
+notebook templates build from aria and pour accessibility principles.
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">-1</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="0">
+<li class="output display_data">
+<dl class="output display_data" id="9c679b04-7063-4935-86bb-2152b25f7919:outputs:0">
+<dt class="mime">text/markdown</dt>
+<dd class="mime display_data" data-mime="text/markdown" id="9c679b04-7063-4935-86bb-2152b25f7919:outputs:1:text/markdown">
+<a class="h" href="#reference-notebook-documentation">¶</a><h1 id="reference-notebook-documentation">reference notebook documentation</h1>
+<p>notebook templates build from aria and pour accessibility principles.</p>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="2" class="cell markdown" id="cell:2">
+<section class="cell markdown text/markdown" data-execution-count="-1" data-outputs="0" data-sloc="">
+<form class="cell metadata" id="be37edce-a346-49cc-9524-315de3ad3ff1" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">2</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#2">
+<span class="cell label nv">cell </span>
+<slot name="index">2</slot>
+</a>
+</li>
+<li class="current"><input form="nb" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="nb" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="nb" hidden="" name="cells" value="be37edce-a346-49cc-9524-315de3ad3ff1"/>
+<input name="id" value="be37edce-a346-49cc-9524-315de3ad3ff1"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option value="code">code</option>
+<option selected="" value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" selected="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="-1"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="0"></textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">-1</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="0">
+<li class="output display_data">
+<dl class="output display_data" id="be37edce-a346-49cc-9524-315de3ad3ff1:outputs:0">
+<dt class="mime">text/markdown</dt>
+<dd class="mime display_data" data-mime="text/markdown" id="be37edce-a346-49cc-9524-315de3ad3ff1:outputs:1:text/markdown">
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+</ol>
+</section>
+<template id="nb:template">
+<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="NBID:region">
+<form class="nb" id="NBID" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup>
+<h1 id="title"><slot name="title">untitled</slot></h1>
+<p id="description"><slot name="description"></slot></p>
+</hgroup>
+<!-- edit-only run-only -->
+<dl class="metadata known edit-only">
+<dt class="title">
+<label for="nb:metadata:title">title</label>
+</dt>
+<dd class="title">
+<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
+</dd>
+<dt class="description">
+<label for="nb:metadata:description">description</label>
+</dt>
+<dd class="description">
+<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
+</dd>
+</dl>
+<dl class="metadata known">
+<dt class="updated_at empty">updated at</dt>
+<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
+<dt class="created_at empty">created at</dt>
+<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
+<dt class="author" data-authors="0">
+<label id="nb:metadata:authors">author<span class="plural">s</span></label>
+</dt>
+</dl>
+<details class="metadata unknown edit-only">
+<summary>metadata</summary>
+<dl class="metadata unknown">
+</dl>
+</details>
+<details class="summary" open="">
+<summary>summary</summary>
+<dl>
+<dt>statistics</dt>
+<dd class="statistics flex row">
+<span><slot name="cells_length">0</slot></span>
+<label>cells</label>
+<menu role="toolbar">
+<li class="execution">
+<select name="execution" readonly="" tabindex="-1">
+<option value="executed">executed</option>
+<option value="unexecuted">unexecuted</option>
+<option value="partially executed">partial executed</option>
+</select>
+</li>
+<li class="success">
+<select name="success" readonly="" tabindex="-1">
+<option value="successfully">successfully</option>
+<option value="unsuccessfully">unsuccessfully</option>
+</select>
+</li>
+<li class="order">
+<select name="order" readonly="" tabindex="-1">
+<option value="in uniform order">in uniform order</option>
+<option value="in order">in order</option>
+<option value="out of order">out of order</option>
+</select>
+</li>
+</menu>
+</dd>
+<dt>headings</dt>
+<dd><nav class="cells headings">
+<menu role="toolbar">
+<li>
+<label>
+<input name="show_cells" type="checkbox"/>
+                                show cells
+                            </label>
+</li>
+<li>
+<label>
+<input checked="" name="show_headings" type="checkbox"/>
+                                show headings
+                            </label>
+</li>
+</menu>
+<dl class="nav headings">
+</dl>
+</nav></dd></dl></details>
+
+<dt>layout</dt>
+<dd class="layout">
+<menu role="toolbar">
+<dl class="layout flex row" role="group">
+<dt>mode</dt>
+<dd>
+<label>
+<span class="label">mode</span>
+<select aria-controls="NBID:region" name="mode" onchange="toggleClass(event);">
+<option selected="" value="read-mode">read mode</option>
+<option value="run-mode">run mode</option>
+<option value="edit-mode">edit mode</option>
+<option value="select-mode">select mode</option>
+</select>
+</label>
+<dt class="nv">horizontal layout</dt>
+<dd>
+<select name="horizontal">
+<option value="">compact</option>
+<option value="wide">wide</option>
+</select>
+</dd>
+<dt>columns</dt>
+<dd>
+<input name="columns" type="number" value="1"/>
+</dd>
+<dt>reverse</dt>
+<dd><input name="reverse" type="checkbox"/></dd>
+<dt>orientation</dt>
+<dd>
+<select aria-controls="NBID:region" name="orientation" onchange="toggleClass(event)">
+<option value="">input above output</option>
+<option value="out-in">input below output</option>
+<option value="ltr">input left of output</option>
+<option value="rtl">input right of output</option>
+<option value="no-outputs">input only</option>
+<option value="no-source">output only</option>
+</select>
+</dd>
+</dd></dl>
+</menu>
+</dd>
+
+
+<script class="action">
+            //- html element actions that inputs can perform
+        </script>
+<menu class="" role="toolbar">
+<li class="run run-only">
+<button type="submit">run selected cells</button>
+</li>
+</menu>
+</form>
+<script class="metadata" type="application/json">{}</script>
+<!-- paginate and layout interface goes here -->
+<ol aria-multiselectable="false" aria-setsize="0" class="cells">
+</ol>
+</section>
+</template>
+<template id="cell:template">
+<li aria-posinset="0" class="cell code" id="cell:CELLID">
+<section class="cell text/html" data-execution-count="" data-outputs="0" data-sloc="">
+<form class="cell metadata" id="CELLID" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index"></slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#">
+<span class="cell label nv">cell </span>
+<slot name="index"></slot>
+</a>
+</li>
+<li class="current"><input form="NBID" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="NBID" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="NBID" hidden="" name="cells" value="CELLID"/>
+<input name="id" value="CELLID"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option selected="" value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value=""/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="0"></textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count"></slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="0">
+</ol>
+</details>
+</section>
+</li>
+</template>
+</main>
+<dialog id="settings:dialog">
+<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb no-source no-metadata" data-highlight-theme="" data-readonly="true" id="settings:region">
+<form class="nb" id="settings" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup>
+<h1 id="title"><slot name="title">untitled</slot></h1>
+<p id="description"><slot name="description"></slot></p>
+</hgroup>
+<!-- edit-only run-only -->
+<dl class="metadata known edit-only">
+<dt class="title">
+<label for="nb:metadata:title">title</label>
+</dt>
+<dd class="title">
+<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
+</dd>
+<dt class="description">
+<label for="nb:metadata:description">description</label>
+</dt>
+<dd class="description">
+<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
+</dd>
+</dl>
+<dl class="metadata known">
+<dt class="updated_at empty">updated at</dt>
+<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
+<dt class="created_at empty">created at</dt>
+<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
+<dt class="author" data-authors="0">
+<label id="nb:metadata:authors">author<span class="plural">s</span></label>
+</dt>
+</dl>
+<details class="metadata unknown edit-only">
+<summary>metadata</summary>
+<dl class="metadata unknown">
+<dt class="kernelspec">
+<label for="nb:metadata:kernelspec">kernelspec</label>
+</dt>
+<dd class="kernelspec">
+<input id="nb:metadata:kernelspec" name="kernelspec" readonly="" tabindex="-1" type="text" value="{'display_name': 'Python 3 (ipykernel)', 'language': 'python', 'name': 'python3'}"/>
+</dd>
+<dt class="language_info">
+<label for="nb:metadata:language_info">language_info</label>
+</dt>
+<dd class="language_info">
+<input id="nb:metadata:language_info" name="language_info" readonly="" tabindex="-1" type="text" value="{'codemirror_mode': {'name': 'ipython', 'version': 3}, 'file_extension': '.py', 'mimetype': 'text/x-python', 'name': 'python', 'nbconvert_exporter': 'python', 'pygments_lexer': 'ipython3', 'version': '3.13.5'}"/>
+</dd>
+</dl>
+</details>
+<details class="summary" open="">
+<summary>summary</summary>
+<dl>
+<dt>statistics</dt>
+<dd class="statistics flex row">
+<span><slot name="cells_length">8</slot></span>
+<label>cells</label>
+<menu role="toolbar">
+<li class="execution">
+<select name="execution" readonly="" tabindex="-1">
+<option value="executed">executed</option>
+<option value="unexecuted">unexecuted</option>
+<option value="partially executed">partial executed</option>
+</select>
+</li>
+<li class="success">
+<select name="success" readonly="" tabindex="-1">
+<option value="successfully">successfully</option>
+<option value="unsuccessfully">unsuccessfully</option>
+</select>
+</li>
+<li class="order">
+<select name="order" readonly="" tabindex="-1">
+<option value="in uniform order">in uniform order</option>
+<option value="in order">in order</option>
+<option value="out of order">out of order</option>
+</select>
+</li>
+</menu>
+</dd>
+<dt>headings</dt>
+<dd><nav class="cells headings">
+<menu role="toolbar">
+<li>
+<label>
+<input name="show_cells" type="checkbox"/>
+                                show cells
+                            </label>
+</li>
+<li>
+<label>
+<input checked="" name="show_headings" type="checkbox"/>
+                                show headings
+                            </label>
+</li>
+</menu>
+<dl class="nav headings">
+<dt data-cell="1">
+<a href="#cell:1">
+                                cell 1        
+                            </a>
+</dt>
+<dt data-cell="2">
+<a href="#cell:2">
+                                cell 2        
+                            </a>
+</dt>
+<dt data-cell="3">
+<a href="#cell:3">
+                                cell 3        
+                            </a>
+</dt>
+<dt data-cell="4">
+<a href="#cell:4">
+                                cell 4        
+                            </a>
+</dt>
+<dt data-cell="5">
+<a href="#cell:5">
+                                cell 5        
+                            </a>
+</dt>
+<dt data-cell="6">
+<a href="#cell:6">
+                                cell 6        
+                            </a>
+</dt>
+<dt data-cell="7">
+<a href="#cell:7">
+                                cell 7        
+                            </a>
+</dt>
+<dt data-cell="8">
+<a href="#cell:8">
+                                cell 8        
+                            </a>
+</dt>
+</dl>
+</nav></dd></dl></details>
+
+<dt>layout</dt>
+<dd class="layout">
+<menu role="toolbar">
+<dl class="layout flex row" role="group">
+<dt>mode</dt>
+<dd>
+<label>
+<span class="label">mode</span>
+<select aria-controls="settings:region" name="mode" onchange="toggleClass(event);">
+<option selected="" value="read-mode">read mode</option>
+<option value="run-mode">run mode</option>
+<option value="edit-mode">edit mode</option>
+<option value="select-mode">select mode</option>
+</select>
+</label>
+<dt class="nv">horizontal layout</dt>
+<dd>
+<select name="horizontal">
+<option value="">compact</option>
+<option value="wide">wide</option>
+</select>
+</dd>
+<dt>columns</dt>
+<dd>
+<input name="columns" type="number" value="1"/>
+</dd>
+<dt>reverse</dt>
+<dd><input name="reverse" type="checkbox"/></dd>
+<dt>orientation</dt>
+<dd>
+<select aria-controls="settings:region" name="orientation" onchange="toggleClass(event)">
+<option value="">input above output</option>
+<option value="out-in">input below output</option>
+<option value="ltr">input left of output</option>
+<option value="rtl">input right of output</option>
+<option value="no-outputs">input only</option>
+<option value="no-source">output only</option>
+</select>
+</dd>
+</dd></dl>
+</menu>
+</dd>
+
+
+<script class="action">
+            //- html element actions that inputs can perform
+        </script>
+<menu class="" role="toolbar">
+<li class="run run-only">
+<button type="submit">run selected cells</button>
+</li>
+</menu>
+</form>
+<script class="metadata" type="application/json">{"kernelspec": {"display_name": "Python 3 (ipykernel)", "language": "python", "name": "python3"}, "language_info": {"codemirror_mode": {"name": "ipython", "version": 3}, "file_extension": ".py", "mimetype": "text/x-python", "name": "python", "nbconvert_exporter": "python", "pygments_lexer": "ipython3", "version": "3.13.5"}}</script>
+<!-- paginate and layout interface goes here -->
+<ol aria-multiselectable="false" aria-setsize="8" class="cells">
+<li aria-posinset="1" class="cell markdown" id="cell:1">
+<section class="cell markdown text/markdown" data-execution-count="-1" data-outputs="0" data-sloc="">
+<form class="cell metadata" id="651565cd-bb36-4a37-8944-b84c51cd705d" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">1</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#1">
+<span class="cell label nv">cell </span>
+<slot name="index">1</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="651565cd-bb36-4a37-8944-b84c51cd705d"/>
+<input name="id" value="651565cd-bb36-4a37-8944-b84c51cd705d"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option value="code">code</option>
+<option selected="" value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" selected="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="-1"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="1"># settings</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight"><span class="gh"># settings</span>
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">-1</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="0">
+<li class="output display_data">
+<dl class="output display_data" id="651565cd-bb36-4a37-8944-b84c51cd705d:outputs:0">
+<dt class="mime">text/markdown</dt>
+<dd class="mime display_data" data-mime="text/markdown" id="651565cd-bb36-4a37-8944-b84c51cd705d:outputs:1:text/markdown">
+<a class="h" href="#settings">¶</a><h1 id="settings">settings</h1>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="2" class="cell code" id="cell:2">
+<section class="cell code text/x-python" data-execution-count="23" data-outputs="1" data-sloc="">
+<form class="cell metadata" id="10448fd8-2636-4f4c-b0b1-1050b79d7ae5" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">2</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#2">
+<span class="cell label nv">cell </span>
+<slot name="index">2</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="10448fd8-2636-4f4c-b0b1-1050b79d7ae5"/>
+<input name="id" value="10448fd8-2636-4f4c-b0b1-1050b79d7ae5"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="23"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="93">%%
+
+```pug
+form(name="accessibility")
+    hgroup
+        h2 accesssibility settings
+        p change typography, color, and nonvisual settings
+    ol
+        li.theme
+            label
+                span.label color scheme
+                select(name="color-scheme", onchange="toggleClass(event)")
+                    option(value="") system
+                    option(value="light") light
+                    option(value="dark") dark
+        li.colors
+            label
+                span.label light color
+                input(type="color", name="fg", onchange="updateStyleVar(event)", value="white")
+            label
+                span.label dark color
+                input(type="color", name="bg", onchange="updateStyleVar(event)", value="black")
+            label
+                span.label accent color
+                input(type="color", name="accent-color", onchange="updateStyleVar(event)", value="gray")
+                
+        li.font-size
+            label 
+                span.label font size
+                select(name="font-size", onchange="updateStyleVar(event)")
+                    option(value="0.5625rem") xx-small
+                    option(value="0.625rem") x-small
+                    option(value="0.8125rem") small
+                    option(value="1rem") medium
+                    option(value="1.125rem") large
+                    option(value="1.625rem") x-large
+                    option(value="2rem") xx-large
+                    option(value="3rem") xxx-large
+                    option(value="4rem") xxxx-large
+                    option(value="5rem") xxxxx-large
+                    option(value="6rem") xxxxxx-large
+                    option(value="7rem") xxxxxxx-large
+                    option(value="8rem") xxxxxxxx-large
+
+        li.line-height
+            label 
+                span.label line height
+                input(name="line-height", type="number", onchange="updateStyleVar(event)", value=1)
+    style.
+        :root {
+            --margin: 1rem;
+            --light: white;
+            --dark: black;
+            --accent-light: gray;
+            --accent-dark: gray;
+            --font-size: 1rem;
+        }
+        input[type="checkbox"], input[type="redio"] {
+            height: var(--font-size);
+            width: var(--font-size);
+        }
+        body, input, select {
+            font-size: var(--font-size);
+        }
+        .light {
+            --fg: var(--dark);
+            --bg: var(--light);
+            --accent: var(--accent-light);
+        }
+        .dark {
+            --fg: var(--light);
+            --bg: var(--dark);
+            --accent: var(--accent-dark);
+            a {
+                filter: invert(100%);
+            }
+        }
+        .light, .dark {
+            background-color: var(--bg);
+            color: var(--fg);
+            dialog, textarea, input, select {
+                background-color: var(--bg);
+                color: var(--fg);
+            }
+        }
+        body {
+            main {
+                margin-left: var(--margin);
+                margin-right: var(--margin);
+            }
+        }
+
+```</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">%%
+
+```pug
+form(name="accessibility")
+    hgroup
+        h2 accesssibility settings
+        p change typography, color, and nonvisual settings
+    ol
+        li.theme
+            label
+                span.label color scheme
+                select(name="color-scheme", onchange="toggleClass(event)")
+                    option(value="") system
+                    option(value="light") light
+                    option(value="dark") dark
+        li.colors
+            label
+                span.label light color
+                input(type="color", name="fg", onchange="updateStyleVar(event)", value="white")
+            label
+                span.label dark color
+                input(type="color", name="bg", onchange="updateStyleVar(event)", value="black")
+            label
+                span.label accent color
+                input(type="color", name="accent-color", onchange="updateStyleVar(event)", value="gray")
+                
+        li.font-size
+            label 
+                span.label font size
+                select(name="font-size", onchange="updateStyleVar(event)")
+                    option(value="0.5625rem") xx-small
+                    option(value="0.625rem") x-small
+                    option(value="0.8125rem") small
+                    option(value="1rem") medium
+                    option(value="1.125rem") large
+                    option(value="1.625rem") x-large
+                    option(value="2rem") xx-large
+                    option(value="3rem") xxx-large
+                    option(value="4rem") xxxx-large
+                    option(value="5rem") xxxxx-large
+                    option(value="6rem") xxxxxx-large
+                    option(value="7rem") xxxxxxx-large
+                    option(value="8rem") xxxxxxxx-large
+
+        li.line-height
+            label 
+                span.label line height
+                input(name="line-height", type="number", onchange="updateStyleVar(event)", value=1)
+    style.
+        :root {
+            --margin: 1rem;
+            --light: white;
+            --dark: black;
+            --accent-light: gray;
+            --accent-dark: gray;
+            --font-size: 1rem;
+        }
+        input[type="checkbox"], input[type="redio"] {
+            height: var(--font-size);
+            width: var(--font-size);
+        }
+        body, input, select {
+            font-size: var(--font-size);
+        }
+        .light {
+            --fg: var(--dark);
+            --bg: var(--light);
+            --accent: var(--accent-light);
+        }
+        .dark {
+            --fg: var(--light);
+            --bg: var(--dark);
+            --accent: var(--accent-dark);
+            a {
+                filter: invert(100%);
+            }
+        }
+        .light, .dark {
+            background-color: var(--bg);
+            color: var(--fg);
+            dialog, textarea, input, select {
+                background-color: var(--bg);
+                color: var(--fg);
+            }
+        }
+        body {
+            main {
+                margin-left: var(--margin);
+                margin-right: var(--margin);
+            }
+        }
+
+```
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">23</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="1">
+<li class="output execute_result">
+<dl class="output execute_result" id="10448fd8-2636-4f4c-b0b1-1050b79d7ae5:outputs:0">
+<dt class="mime">text/html</dt>
+<dd class="mime execute_result" data-mime="text/html" id="10448fd8-2636-4f4c-b0b1-1050b79d7ae5:outputs:1:text/html">
+<form name="accessibility">
+<hgroup>
+<a class="h" href="#accesssibility-settings">¶</a><h2 id="accesssibility-settings">accesssibility settings</h2>
+<p>change typography, color, and nonvisual settings</p>
+</hgroup>
+<ol>
+<li class="theme">
+<label><span class="label">color scheme</span>
+<select name="color-scheme" onchange="toggleClass(event)">
+<option value="">system</option>
+<option value="light">light</option>
+<option value="dark">dark</option>
+</select>
+</label>
+</li>
+<li class="colors">
+<label><span class="label">light color</span>
+<input name="fg" onchange="updateStyleVar(event)" type="color" value="white">
+</input></label>
+<label><span class="label">dark color</span>
+<input name="bg" onchange="updateStyleVar(event)" type="color" value="black">
+</input></label>
+<label><span class="label">accent color</span>
+<input name="accent-color" onchange="updateStyleVar(event)" type="color" value="gray">
+</input></label>
+</li>
+<li class="font-size">
+<label><span class="label">font size</span>
+<select name="font-size" onchange="updateStyleVar(event)">
+<option value="0.5625rem">xx-small</option>
+<option value="0.625rem">x-small</option>
+<option value="0.8125rem">small</option>
+<option value="1rem">medium</option>
+<option value="1.125rem">large</option>
+<option value="1.625rem">x-large</option>
+<option value="2rem">xx-large</option>
+<option value="3rem">xxx-large</option>
+<option value="4rem">xxxx-large</option>
+<option value="5rem">xxxxx-large</option>
+<option value="6rem">xxxxxx-large</option>
+<option value="7rem">xxxxxxx-large</option>
+<option value="8rem">xxxxxxxx-large</option>
+</select>
+</label>
+</li>
+<li class="line-height">
+<label><span class="label">line height</span>
+<input name="line-height" onchange="updateStyleVar(event)" type="number" value="1">
+</input></label>
+</li>
+</ol>
+<style>:root {
+    --margin: 1rem;
+    --light: white;
+    --dark: black;
+    --accent-light: gray;
+    --accent-dark: gray;
+    --font-size: 1rem;
+}
+input[type="checkbox"], input[type="redio"] {
+    height: var(--font-size);
+    width: var(--font-size);
+}
+body, input, select {
+    font-size: var(--font-size);
+}
+.light {
+    --fg: var(--dark);
+    --bg: var(--light);
+    --accent: var(--accent-light);
+}
+.dark {
+    --fg: var(--light);
+    --bg: var(--dark);
+    --accent: var(--accent-dark);
+    a {
+        filter: invert(100%);
+    }
+}
+.light, .dark {
+    background-color: var(--bg);
+    color: var(--fg);
+    dialog, textarea, input, select {
+        background-color: var(--bg);
+        color: var(--fg);
+    }
+}
+body {
+    main {
+        margin-left: var(--margin);
+        margin-right: var(--margin);
+    }
+}
+  </style>
+</form>
+</dd>
+<dt class="mime">text/plain</dt>
+<dd class="mime execute_result" data-mime="text/plain" id="10448fd8-2636-4f4c-b0b1-1050b79d7ae5:outputs:1:text/plain">
+<pre>'form(name="accessibility")\n    hgroup\n        h2 accesssibility settings\n        p change typography, color, and nonvisual settings\n    ol\n        li.theme\n            label\n                span.label color scheme\n                select(name="color-scheme", onchange="toggleClass(event)")\n                    option(value="") system\n                    option(value="light") light\n                    option(value="dark") dark\n        li.colors\n            label\n                span.label light color\n                input(type="color", name="fg", onchange="updateStyleVar(event)", value="white")\n            label\n                span.label dark color\n                input(type="color", name="bg", onchange="updateStyleVar(event)", value="black")\n            label\n                span.label accent color\n                input(type="color", name="accent-color", onchange="updateStyleVar(event)", value="gray")\n\n        li.font-size\n            label \n                span.label font size\n                select(name="font-size", onchange="updateStyleVar(event)")\n                    option(value="0.5625rem") xx-small\n                    option(value="0.625rem") x-small\n                    option(value="0.8125rem") small\n                    option(value="1rem") medium\n                    option(value="1.125rem") large\n                    option(value="1.625rem") x-large\n                    option(value="2rem") xx-large\n                    option(value="3rem") xxx-large\n                    option(value="4rem") xxxx-large\n                    option(value="5rem") xxxxx-large\n                    option(value="6rem") xxxxxx-large\n                    option(value="7rem") xxxxxxx-large\n                    option(value="8rem") xxxxxxxx-large\n\n        li.line-height\n            label \n                span.label line height\n                input(name="line-height", type="number", onchange="updateStyleVar(event)", value=1)\n    style.\n        :root {\n            --margin: 1rem;\n            --light: white;\n            --dark: black;\n            --accent-light: gray;\n            --accent-dark: gray;\n            --font-size: 1rem;\n        }\n        input[type="checkbox"], input[type="redio"] {\n            height: var(--font-size);\n            width: var(--font-size);\n        }\n        body, input, select {\n            font-size: var(--font-size);\n        }\n        .light {\n            --fg: var(--dark);\n            --bg: var(--light);\n            --accent: var(--accent-light);\n        }\n        .dark {\n            --fg: var(--light);\n            --bg: var(--dark);\n            --accent: var(--accent-dark);\n            a {\n                filter: invert(100%);\n            }\n        }\n        .light, .dark {\n            background-color: var(--bg);\n            color: var(--fg);\n            dialog, textarea, input, select {\n                background-color: var(--bg);\n                color: var(--fg);\n            }\n        }\n        body {\n            main {\n                margin-left: var(--margin);\n                margin-right: var(--margin);\n            }\n        }\n\n'</pre>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="3" class="cell code" id="cell:3">
+<section class="cell code text/x-python" data-execution-count="24" data-outputs="1" data-sloc="">
+<form class="cell metadata" id="d6a36007" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">3</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#3">
+<span class="cell label nv">cell </span>
+<slot name="index">3</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="d6a36007"/>
+<input name="id" value="d6a36007"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="24"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="90">%%html
+&lt;form class="runtime" name="text/plain"&gt;
+                    &lt;hgroup&gt;
+                        &lt;h2&gt;browser&lt;/h2&gt;
+                        &lt;p&gt;the builtin runtime types&lt;/p&gt;
+                    &lt;/hgroup&gt;
+                    &lt;script&gt;
+                        const mimeTypes = {
+                            "txt": "text/plain",
+                            "md": "text/markdown",
+                            "html": "text/html",
+                            "json": "application/json",
+                            "png": "image/png",
+                            "jpg": "image/jpeg",
+                            "jpeg": "image/jpeg",
+                            "svg": "image/svg+xml",
+                            "bmp": "image/bmp",
+                            "js": "application/javascript",
+                            "ipynb": "application/json+ipynb"
+                        };
+                        function inferMimetypeFromExtension(url) {
+                            return mimeTypes[url.split('.').pop().toLowerCase()] || "text/plain";
+                        }
+                        function newOutput(data={}, metadata={}, type="display_data") {
+                            return{
+                                "output_type": type,
+                                "data": {...data},
+                                "metadata": {...metadata}
+                            }
+                        }
+                        function newError(error) {
+                            return {
+                                "output_type": "error",
+                                "ename": error.name,
+                                "evalue": error.message,
+                                "traceback": []
+                            }
+                        }
+                        function runBrowser(cell, runtime) {
+                            const cellData = cell.getCellData();
+                            return runBrowserSource(cell, runtime, cellData.source)
+                        }
+                        function isJsonType(mimetype) {
+                            return Boolean(
+                                mimetype?.startsWith("application/json")
+                            ) || Boolean(
+                                mimetype?.startsWith("application/vnd.jupyter.widget")
+                            );
+                        }
+                        function runBrowserSource(cell, runtime, source, mimetype="") {
+                            const cellData = cell.getCellData();
+                            mimetype = mimetype || cell.form.input_type.value;
+                            source = source || cellData.source;
+                            if (isJsonType(mimetype)) {
+                                source = JSON.parse(source);
+                            }
+                            if (mimetype == "text/uri-list") {
+                                // fetch the url
+                                const outputs = [];
+                                const urls = source.split("\n").filter(line =&gt; line.trim() &amp;&amp; !line.startsWith("#"));
+                                for (const url of urls) {
+                                    const match = url.match("data:([^;]+)(;base64){0,1},(.*)");
+                                    if (match) {
+                                        outputs.push(
+                                            newOutput(
+                                                Object.fromEntries([[match[1], match[3]]]),
+                                                {},
+                                            )
+                                        )
+                                    } else {
+                                        outputs.push(
+                                            newOutput(
+                                                Object.fromEntries([[inferMimetypeFromExtension(url), ""]]),
+                                                Object.fromEntries([[inferMimetypeFromExtension(url), {src: url}]])
+                                            )
+                                        )
+                                    }
+
+                                }
+                                console.log(outputs)
+                                return new Promise(resolve =&gt; resolve(outputs))
+                            }
+                            return new Promise((resolve, reject) =&gt; {
+                                const outputs = [newOutput(Object.fromEntries([[mimetype, source]]))];
+                                resolve(outputs)
+                            })
+                        }
+                        document.forms["text/plain"].__data__ = runBrowser
+                    &lt;/script&gt;
+                &lt;/form&gt;</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">%%html
+&lt;form class="runtime" name="text/plain"&gt;
+                    &lt;hgroup&gt;
+                        &lt;h2&gt;browser&lt;/h2&gt;
+                        &lt;p&gt;the builtin runtime types&lt;/p&gt;
+                    &lt;/hgroup&gt;
+                    &lt;script&gt;
+                        const mimeTypes = {
+                            "txt": "text/plain",
+                            "md": "text/markdown",
+                            "html": "text/html",
+                            "json": "application/json",
+                            "png": "image/png",
+                            "jpg": "image/jpeg",
+                            "jpeg": "image/jpeg",
+                            "svg": "image/svg+xml",
+                            "bmp": "image/bmp",
+                            "js": "application/javascript",
+                            "ipynb": "application/json+ipynb"
+                        };
+                        function inferMimetypeFromExtension(url) {
+                            return mimeTypes[url.split('.').pop().toLowerCase()] || "text/plain";
+                        }
+                        function newOutput(data={}, metadata={}, type="display_data") {
+                            return{
+                                "output_type": type,
+                                "data": {...data},
+                                "metadata": {...metadata}
+                            }
+                        }
+                        function newError(error) {
+                            return {
+                                "output_type": "error",
+                                "ename": error.name,
+                                "evalue": error.message,
+                                "traceback": []
+                            }
+                        }
+                        function runBrowser(cell, runtime) {
+                            const cellData = cell.getCellData();
+                            return runBrowserSource(cell, runtime, cellData.source)
+                        }
+                        function isJsonType(mimetype) {
+                            return Boolean(
+                                mimetype?.startsWith("application/json")
+                            ) || Boolean(
+                                mimetype?.startsWith("application/vnd.jupyter.widget")
+                            );
+                        }
+                        function runBrowserSource(cell, runtime, source, mimetype="") {
+                            const cellData = cell.getCellData();
+                            mimetype = mimetype || cell.form.input_type.value;
+                            source = source || cellData.source;
+                            if (isJsonType(mimetype)) {
+                                source = JSON.parse(source);
+                            }
+                            if (mimetype == "text/uri-list") {
+                                // fetch the url
+                                const outputs = [];
+                                const urls = source.split("\n").filter(line =&gt; line.trim() &amp;&amp; !line.startsWith("#"));
+                                for (const url of urls) {
+                                    const match = url.match("data:([^;]+)(;base64){0,1},(.*)");
+                                    if (match) {
+                                        outputs.push(
+                                            newOutput(
+                                                Object.fromEntries([[match[1], match[3]]]),
+                                                {},
+                                            )
+                                        )
+                                    } else {
+                                        outputs.push(
+                                            newOutput(
+                                                Object.fromEntries([[inferMimetypeFromExtension(url), ""]]),
+                                                Object.fromEntries([[inferMimetypeFromExtension(url), {src: url}]])
+                                            )
+                                        )
+                                    }
+
+                                }
+                                console.log(outputs)
+                                return new Promise(resolve =&gt; resolve(outputs))
+                            }
+                            return new Promise((resolve, reject) =&gt; {
+                                const outputs = [newOutput(Object.fromEntries([[mimetype, source]]))];
+                                resolve(outputs)
+                            })
+                        }
+                        document.forms["text/plain"].__data__ = runBrowser
+                    &lt;/script&gt;
+                &lt;/form&gt;
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">24</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="1">
+<li class="output display_data">
+<dl class="output display_data" id="d6a36007:outputs:0">
+<dt class="mime">text/html</dt>
+<dd class="mime display_data" data-mime="text/html" id="d6a36007:outputs:1:text/html">
+<form class="runtime" name="text/plain">
+<hgroup>
+<a class="h" href="#browser">¶</a><h2 id="browser">browser</h2>
+<p>the builtin runtime types</p>
+</hgroup>
+<script>
+                        const mimeTypes = {
+                            "txt": "text/plain",
+                            "md": "text/markdown",
+                            "html": "text/html",
+                            "json": "application/json",
+                            "png": "image/png",
+                            "jpg": "image/jpeg",
+                            "jpeg": "image/jpeg",
+                            "svg": "image/svg+xml",
+                            "bmp": "image/bmp",
+                            "js": "application/javascript",
+                            "ipynb": "application/json+ipynb"
+                        };
+                        function inferMimetypeFromExtension(url) {
+                            return mimeTypes[url.split('.').pop().toLowerCase()] || "text/plain";
+                        }
+                        function newOutput(data={}, metadata={}, type="display_data") {
+                            return{
+                                "output_type": type,
+                                "data": {...data},
+                                "metadata": {...metadata}
+                            }
+                        }
+                        function newError(error) {
+                            return {
+                                "output_type": "error",
+                                "ename": error.name,
+                                "evalue": error.message,
+                                "traceback": []
+                            }
+                        }
+                        function runBrowser(cell, runtime) {
+                            const cellData = cell.getCellData();
+                            return runBrowserSource(cell, runtime, cellData.source)
+                        }
+                        function isJsonType(mimetype) {
+                            return Boolean(
+                                mimetype?.startsWith("application/json")
+                            ) || Boolean(
+                                mimetype?.startsWith("application/vnd.jupyter.widget")
+                            );
+                        }
+                        function runBrowserSource(cell, runtime, source, mimetype="") {
+                            const cellData = cell.getCellData();
+                            mimetype = mimetype || cell.form.input_type.value;
+                            source = source || cellData.source;
+                            if (isJsonType(mimetype)) {
+                                source = JSON.parse(source);
+                            }
+                            if (mimetype == "text/uri-list") {
+                                // fetch the url
+                                const outputs = [];
+                                const urls = source.split("\n").filter(line => line.trim() && !line.startsWith("#"));
+                                for (const url of urls) {
+                                    const match = url.match("data:([^;]+)(;base64){0,1},(.*)");
+                                    if (match) {
+                                        outputs.push(
+                                            newOutput(
+                                                Object.fromEntries([[match[1], match[3]]]),
+                                                {},
+                                            )
+                                        )
+                                    } else {
+                                        outputs.push(
+                                            newOutput(
+                                                Object.fromEntries([[inferMimetypeFromExtension(url), ""]]),
+                                                Object.fromEntries([[inferMimetypeFromExtension(url), {src: url}]])
+                                            )
+                                        )
+                                    }
+
+                                }
+                                console.log(outputs)
+                                return new Promise(resolve => resolve(outputs))
+                            }
+                            return new Promise((resolve, reject) => {
+                                const outputs = [newOutput(Object.fromEntries([[mimetype, source]]))];
+                                resolve(outputs)
+                            })
+                        }
+                        document.forms["text/plain"].__data__ = runBrowser
+                    </script>
+</form>
+</dd>
+<dt class="mime">text/plain</dt>
+<dd class="mime display_data" data-mime="text/plain" id="d6a36007:outputs:1:text/plain">
+<pre><ipython.core.display.html object=""></ipython.core.display.html></pre>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="4" class="cell code" id="cell:4">
+<section class="cell code text/x-python" data-execution-count="4" data-outputs="1" data-sloc="">
+<form class="cell metadata" id="7aa72d1e-18e5-4b74-9adc-8e80bb9bf6fb" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">4</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#4">
+<span class="cell label nv">cell </span>
+<slot name="index">4</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="7aa72d1e-18e5-4b74-9adc-8e80bb9bf6fb"/>
+<input name="id" value="7aa72d1e-18e5-4b74-9adc-8e80bb9bf6fb"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="4"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="65">%%html
+&lt;script id="utils"&gt;
+function toggleClass(event) {
+    const classes = event.target.value ? event.target.value.split(" ") : [];
+    
+    (event.target.ariaControlsElements || [document.body]).forEach(element =&gt; {
+        Array.from(event.target.options).forEach(
+            (option) =&gt; {
+                if (option.value) {
+                    option.value.split(" ").forEach(
+                        (option) =&gt; {
+                            element.classList.toggle(option, classes.includes(option))
+                        }
+                    )
+                    element.classList.toggle(option.value, option.value == event.target.value)
+                };
+            }
+        )
+    });
+}
+function updateStyleVar(event) {
+    document.body.style.setProperty("--" + event.target.name, event.target.value)
+}
+function waitForProperty(object, name, ...args) {
+    return (resolve, reject) =&gt; {
+        if (object[name]) {
+            resolve(...args)
+        } else {
+            setTimeout(waitForProperty(object, name, ...args).bind(this, resolve, reject), 30)
+        }
+    }
+}
+function toggleDialog(object, open=true) {
+    if (object.tagName == "DIALOG") {
+        return object.showModal()
+    }
+    if (open) {
+        var role = object.getAttribute("role");
+        if (role &amp;&amp; role != "dialog" ) {
+            object.setAttribute("data-role", role)
+        }
+        object.setAttribute("role", "dialog");
+        object.setAttribute("aria-modal", "true");
+
+    } else {
+        object = object.matches("[role=dialog][aria-modal=true]") ? object : object.closest("[role=dialog][aria-modal=true]");
+        if (!object) { return }
+        object.removeAttribute("role");
+        if (object.dataset.role) {
+            object.setAttribute("role", object.dataset.role);
+            object.removeAttribute("dataset-role");
+        }
+        object.setAttribute("aria-modal", "false");
+    }
+    toggleInert(object, open)
+}
+
+function toggleInert(object, inert=true, root=true) {
+    if (!object.parentElement || !object.parentElement.children ) {return}
+    for (const child of Array.from(object.parentElement.children).filter(child =&gt; child !== object)) {
+        inert ? child.setAttribute("inert", "") : child.removeAttribute("inert");
+    }
+    toggleInert(object.parentElement, inert, false)
+}
+&lt;/script&gt;
+</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">%%html
+&lt;script id="utils"&gt;
+function toggleClass(event) {
+    const classes = event.target.value ? event.target.value.split(" ") : [];
+    
+    (event.target.ariaControlsElements || [document.body]).forEach(element =&gt; {
+        Array.from(event.target.options).forEach(
+            (option) =&gt; {
+                if (option.value) {
+                    option.value.split(" ").forEach(
+                        (option) =&gt; {
+                            element.classList.toggle(option, classes.includes(option))
+                        }
+                    )
+                    element.classList.toggle(option.value, option.value == event.target.value)
+                };
+            }
+        )
+    });
+}
+function updateStyleVar(event) {
+    document.body.style.setProperty("--" + event.target.name, event.target.value)
+}
+function waitForProperty(object, name, ...args) {
+    return (resolve, reject) =&gt; {
+        if (object[name]) {
+            resolve(...args)
+        } else {
+            setTimeout(waitForProperty(object, name, ...args).bind(this, resolve, reject), 30)
+        }
+    }
+}
+function toggleDialog(object, open=true) {
+    if (object.tagName == "DIALOG") {
+        return object.showModal()
+    }
+    if (open) {
+        var role = object.getAttribute("role");
+        if (role &amp;&amp; role != "dialog" ) {
+            object.setAttribute("data-role", role)
+        }
+        object.setAttribute("role", "dialog");
+        object.setAttribute("aria-modal", "true");
+
+    } else {
+        object = object.matches("[role=dialog][aria-modal=true]") ? object : object.closest("[role=dialog][aria-modal=true]");
+        if (!object) { return }
+        object.removeAttribute("role");
+        if (object.dataset.role) {
+            object.setAttribute("role", object.dataset.role);
+            object.removeAttribute("dataset-role");
+        }
+        object.setAttribute("aria-modal", "false");
+    }
+    toggleInert(object, open)
+}
+
+function toggleInert(object, inert=true, root=true) {
+    if (!object.parentElement || !object.parentElement.children ) {return}
+    for (const child of Array.from(object.parentElement.children).filter(child =&gt; child !== object)) {
+        inert ? child.setAttribute("inert", "") : child.removeAttribute("inert");
+    }
+    toggleInert(object.parentElement, inert, false)
+}
+&lt;/script&gt;
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">4</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="1">
+<li class="output display_data">
+<dl class="output display_data" id="7aa72d1e-18e5-4b74-9adc-8e80bb9bf6fb:outputs:0">
+<dt class="mime">text/html</dt>
+<dd class="mime display_data" data-mime="text/html" id="7aa72d1e-18e5-4b74-9adc-8e80bb9bf6fb:outputs:1:text/html">
+<script id="utils">
+function toggleClass(event) {
+    const classes = event.target.value ? event.target.value.split(" ") : [];
+
+    (event.target.ariaControlsElements || [document.body]).forEach(element => {
+        Array.from(event.target.options).forEach(
+            (option) => {
+                if (option.value) {
+                    option.value.split(" ").forEach(
+                        (option) => {
+                            element.classList.toggle(option, classes.includes(option))
+                        }
+                    )
+                    element.classList.toggle(option.value, option.value == event.target.value)
+                };
+            }
+        )
+    });
+}
+function updateStyleVar(event) {
+    document.body.style.setProperty("--" + event.target.name, event.target.value)
+}
+function waitForProperty(object, name, ...args) {
+    return (resolve, reject) => {
+        if (object[name]) {
+            resolve(...args)
+        } else {
+            setTimeout(waitForProperty(object, name, ...args).bind(this, resolve, reject), 30)
+        }
+    }
+}
+function toggleDialog(object, open=true) {
+    if (object.tagName == "DIALOG") {
+        return object.showModal()
+    }
+    if (open) {
+        var role = object.getAttribute("role");
+        if (role && role != "dialog" ) {
+            object.setAttribute("data-role", role)
+        }
+        object.setAttribute("role", "dialog");
+        object.setAttribute("aria-modal", "true");
+
+    } else {
+        object = object.matches("[role=dialog][aria-modal=true]") ? object : object.closest("[role=dialog][aria-modal=true]");
+        if (!object) { return }
+        object.removeAttribute("role");
+        if (object.dataset.role) {
+            object.setAttribute("role", object.dataset.role);
+            object.removeAttribute("dataset-role");
+        }
+        object.setAttribute("aria-modal", "false");
+    }
+    toggleInert(object, open)
+}
+
+function toggleInert(object, inert=true, root=true) {
+    if (!object.parentElement || !object.parentElement.children ) {return}
+    for (const child of Array.from(object.parentElement.children).filter(child => child !== object)) {
+        inert ? child.setAttribute("inert", "") : child.removeAttribute("inert");
+    }
+    toggleInert(object.parentElement, inert, false)
+}
+</script>
+</dd>
+<dt class="mime">text/plain</dt>
+<dd class="mime display_data" data-mime="text/plain" id="7aa72d1e-18e5-4b74-9adc-8e80bb9bf6fb:outputs:1:text/plain">
+<pre><ipython.core.display.html object=""></ipython.core.display.html></pre>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="5" class="cell code" id="cell:5">
+<section class="cell code text/x-python" data-execution-count="5" data-outputs="1" data-sloc="">
+<form class="cell metadata" id="43e47110-070b-4dde-8e88-376ebcef70d5" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">5</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#5">
+<span class="cell label nv">cell </span>
+<slot name="index">5</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="43e47110-070b-4dde-8e88-376ebcef70d5"/>
+<input name="id" value="43e47110-070b-4dde-8e88-376ebcef70d5"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="5"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="30">%%html
+&lt;form name="text/markdown"&gt;
+    &lt;hgroup&gt;
+        &lt;h2&gt;markdown&lt;/h2&gt;
+        &lt;p&gt;render markdown with markdown it&lt;/p&gt;
+    &lt;/hgroup&gt;
+    &lt;p&gt;
+        &lt;a href="#"&gt;learn more about markdown syntax&lt;/a&gt;
+    &lt;/p&gt;
+    &lt;script&gt;
+        document.forms["text/markdown"].render = async (source) =&gt; {
+            const tpl = document.getElementById("text:markdown:template");
+            tpl.parentElement.insertBefore(tpl.content.cloneNode(true).querySelector("script"), tpl);
+            return new Promise(waitForProperty(document.forms["text/markdown"], "markdown", source)).then((source)=&gt;{
+                return document.forms["text/markdown"].render(source)
+            })
+        }
+    &lt;/script&gt;
+    &lt;template id="text:markdown:template"&gt;
+        &lt;script type="module"&gt;
+            import markdownIt from 'https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/+esm'
+            document.forms["text/markdown"].markdownIt = markdownIt
+            document.forms["text/markdown"].markdown= markdownIt({html: true})
+            document.forms["text/markdown"].render = async (source) =&gt; {
+                if (source.join) {source = source.join();}
+                return document.forms["text/markdown"].markdown.render(source)
+            }
+        &lt;/script&gt;
+    &lt;/template&gt;
+&lt;/form&gt;
+</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">%%html
+&lt;form name="text/markdown"&gt;
+    &lt;hgroup&gt;
+        &lt;h2&gt;markdown&lt;/h2&gt;
+        &lt;p&gt;render markdown with markdown it&lt;/p&gt;
+    &lt;/hgroup&gt;
+    &lt;p&gt;
+        &lt;a href="#"&gt;learn more about markdown syntax&lt;/a&gt;
+    &lt;/p&gt;
+    &lt;script&gt;
+        document.forms["text/markdown"].render = async (source) =&gt; {
+            const tpl = document.getElementById("text:markdown:template");
+            tpl.parentElement.insertBefore(tpl.content.cloneNode(true).querySelector("script"), tpl);
+            return new Promise(waitForProperty(document.forms["text/markdown"], "markdown", source)).then((source)=&gt;{
+                return document.forms["text/markdown"].render(source)
+            })
+        }
+    &lt;/script&gt;
+    &lt;template id="text:markdown:template"&gt;
+        &lt;script type="module"&gt;
+            import markdownIt from 'https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/+esm'
+            document.forms["text/markdown"].markdownIt = markdownIt
+            document.forms["text/markdown"].markdown= markdownIt({html: true})
+            document.forms["text/markdown"].render = async (source) =&gt; {
+                if (source.join) {source = source.join();}
+                return document.forms["text/markdown"].markdown.render(source)
+            }
+        &lt;/script&gt;
+    &lt;/template&gt;
+&lt;/form&gt;
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">5</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="1">
+<li class="output display_data">
+<dl class="output display_data" id="43e47110-070b-4dde-8e88-376ebcef70d5:outputs:0">
+<dt class="mime">text/html</dt>
+<dd class="mime display_data" data-mime="text/html" id="43e47110-070b-4dde-8e88-376ebcef70d5:outputs:1:text/html">
+<form name="text/markdown">
+<hgroup>
+<a class="h" href="#markdown">¶</a><h2 id="markdown">markdown</h2>
+<p>render markdown with markdown it</p>
+</hgroup>
+<p>
+<a href="#">learn more about markdown syntax</a>
+</p>
+<script>
+        document.forms["text/markdown"].render = async (source) => {
+            const tpl = document.getElementById("text:markdown:template");
+            tpl.parentElement.insertBefore(tpl.content.cloneNode(true).querySelector("script"), tpl);
+            return new Promise(waitForProperty(document.forms["text/markdown"], "markdown", source)).then((source)=>{
+                return document.forms["text/markdown"].render(source)
+            })
+        }
+    </script>
+<template id="text:markdown:template">
+<script type="module">
+            import markdownIt from 'https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/+esm'
+            document.forms["text/markdown"].markdownIt = markdownIt
+            document.forms["text/markdown"].markdown= markdownIt({html: true})
+            document.forms["text/markdown"].render = async (source) => {
+                if (source.join) {source = source.join();}
+                return document.forms["text/markdown"].markdown.render(source)
+            }
+        </script>
+</template>
+</form>
+</dd>
+<dt class="mime">text/plain</dt>
+<dd class="mime display_data" data-mime="text/plain" id="43e47110-070b-4dde-8e88-376ebcef70d5:outputs:1:text/plain">
+<pre><ipython.core.display.html object=""></ipython.core.display.html></pre>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="6" class="cell code" id="cell:6">
+<section class="cell code text/x-python" data-execution-count="8" data-outputs="1" data-sloc="">
+<form class="cell metadata" id="e68f062b-ff27-4669-92a6-96b44bc99fe1" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">6</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#6">
+<span class="cell label nv">cell </span>
+<slot name="index">6</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="e68f062b-ff27-4669-92a6-96b44bc99fe1"/>
+<input name="id" value="e68f062b-ff27-4669-92a6-96b44bc99fe1"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="8"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="39">%%html
+&lt;form name="text/mermaid"&gt;
+    &lt;hgroup&gt;
+        &lt;h2&gt;mermaid&lt;/h2&gt;
+        &lt;p&gt;&lt;/p&gt;
+    &lt;/hgroup&gt;
+    &lt;p&gt;
+        &lt;a href="#"&gt;learn more about mermaid syntax&lt;/a&gt;
+    &lt;/p&gt;
+    &lt;template id="text:mermaid:template"&gt;
+        &lt;script type="module"&gt;
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+            mermaid.initialize({ startOnLoad: false });
+            document.forms["text/mermaid"].mermaid = mermaid 
+            document.forms["text/mermaid"].render = async (source) =&gt; {
+                const { svg } = await mermaid.render('graphDiv', source)
+                return svg
+            }
+            document.forms["text/mermaid"].run = async (config) =&gt; {
+                await mermaid.run(config)
+            }
+        &lt;/script&gt;
+    &lt;/template&gt;
+    &lt;script&gt;
+        ["render", "run"].forEach((key) =&gt; {
+            document.forms["text/mermaid"][key] = (...args) =&gt; {
+                const tpl = document.getElementById("text:mermaid:template");
+                tpl.parentElement.insertBefore(tpl.content.cloneNode(true).querySelector("script"), tpl);
+                return new Promise(waitForProperty(document.forms["text/mermaid"], "mermaid", ...args)).then((...args)=&gt;{
+                    return document.forms["text/mermaid"][key](...args)
+                })
+            }
+        });
+        (() =&gt; {
+            const nodes = document.querySelectorAll("code.language-mermaid");
+            nodes &amp;&amp; document.forms["text/mermaid"].run({nodes: nodes})
+        })()
+    &lt;/script&gt;
+&lt;/form&gt;
+</textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">%%html
+&lt;form name="text/mermaid"&gt;
+    &lt;hgroup&gt;
+        &lt;h2&gt;mermaid&lt;/h2&gt;
+        &lt;p&gt;&lt;/p&gt;
+    &lt;/hgroup&gt;
+    &lt;p&gt;
+        &lt;a href="#"&gt;learn more about mermaid syntax&lt;/a&gt;
+    &lt;/p&gt;
+    &lt;template id="text:mermaid:template"&gt;
+        &lt;script type="module"&gt;
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+            mermaid.initialize({ startOnLoad: false });
+            document.forms["text/mermaid"].mermaid = mermaid 
+            document.forms["text/mermaid"].render = async (source) =&gt; {
+                const { svg } = await mermaid.render('graphDiv', source)
+                return svg
+            }
+            document.forms["text/mermaid"].run = async (config) =&gt; {
+                await mermaid.run(config)
+            }
+        &lt;/script&gt;
+    &lt;/template&gt;
+    &lt;script&gt;
+        ["render", "run"].forEach((key) =&gt; {
+            document.forms["text/mermaid"][key] = (...args) =&gt; {
+                const tpl = document.getElementById("text:mermaid:template");
+                tpl.parentElement.insertBefore(tpl.content.cloneNode(true).querySelector("script"), tpl);
+                return new Promise(waitForProperty(document.forms["text/mermaid"], "mermaid", ...args)).then((...args)=&gt;{
+                    return document.forms["text/mermaid"][key](...args)
+                })
+            }
+        });
+        (() =&gt; {
+            const nodes = document.querySelectorAll("code.language-mermaid");
+            nodes &amp;&amp; document.forms["text/mermaid"].run({nodes: nodes})
+        })()
+    &lt;/script&gt;
+&lt;/form&gt;
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">8</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="1">
+<li class="output display_data">
+<dl class="output display_data" id="e68f062b-ff27-4669-92a6-96b44bc99fe1:outputs:0">
+<dt class="mime">text/html</dt>
+<dd class="mime display_data" data-mime="text/html" id="e68f062b-ff27-4669-92a6-96b44bc99fe1:outputs:1:text/html">
+<form name="text/mermaid">
+<hgroup>
+<a class="h" href="#mermaid">¶</a><h2 id="mermaid">mermaid</h2>
+<p></p>
+</hgroup>
+<p>
+<a href="#">learn more about mermaid syntax</a>
+</p>
+<template id="text:mermaid:template">
+<script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+            mermaid.initialize({ startOnLoad: false });
+            document.forms["text/mermaid"].mermaid = mermaid 
+            document.forms["text/mermaid"].render = async (source) => {
+                const { svg } = await mermaid.render('graphDiv', source)
+                return svg
+            }
+            document.forms["text/mermaid"].run = async (config) => {
+                await mermaid.run(config)
+            }
+        </script>
+</template>
+<script>
+        ["render", "run"].forEach((key) => {
+            document.forms["text/mermaid"][key] = (...args) => {
+                const tpl = document.getElementById("text:mermaid:template");
+                tpl.parentElement.insertBefore(tpl.content.cloneNode(true).querySelector("script"), tpl);
+                return new Promise(waitForProperty(document.forms["text/mermaid"], "mermaid", ...args)).then((...args)=>{
+                    return document.forms["text/mermaid"][key](...args)
+                })
+            }
+        });
+        (() => {
+            const nodes = document.querySelectorAll("code.language-mermaid");
+            nodes && document.forms["text/mermaid"].run({nodes: nodes})
+        })()
+    </script>
+</form>
+</dd>
+<dt class="mime">text/plain</dt>
+<dd class="mime display_data" data-mime="text/plain" id="e68f062b-ff27-4669-92a6-96b44bc99fe1:outputs:1:text/plain">
+<pre><ipython.core.display.html object=""></ipython.core.display.html></pre>
+</dd>
+</dl>
+</li>
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="7" class="cell code" id="cell:7">
+<section class="cell code text/x-python" data-execution-count="None" data-outputs="0" data-sloc="">
+<form class="cell metadata" id="170b2d74-ad5c-4933-9e9c-aa49ca2e244e" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">7</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#7">
+<span class="cell label nv">cell </span>
+<slot name="index">7</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="170b2d74-ad5c-4933-9e9c-aa49ca2e244e"/>
+<input name="id" value="170b2d74-ad5c-4933-9e9c-aa49ca2e244e"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="None"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="0"></textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">None</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="0">
+</ol>
+</details>
+</section>
+</li>
+<li aria-posinset="8" class="cell code" id="cell:8">
+<section class="cell code text/x-python" data-execution-count="None" data-outputs="0" data-sloc="">
+<form class="cell metadata" id="b6313f3d-84e3-4584-b8ff-3a791427e3b4" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup class="run-only">
+<h2>
+<slot name="title"></slot>
+<slot name="index">8</slot>
+</h2>
+<p>
+<slot name="description"></slot>
+</p>
+</hgroup>
+<menu class="cell toolbar" role="toolbar">
+<li class="index">
+<a class="index" href="#8">
+<span class="cell label nv">cell </span>
+<slot name="index">8</slot>
+</a>
+</li>
+<li class="current"><input form="settings" name="current" type="radio"/></li>
+<li class="selected select-only"><input form="settings" name="selected" type="checkbox"/></li>
+<li class="id edit-only">
+<input form="settings" hidden="" name="cells" value="b6313f3d-84e3-4584-b8ff-3a791427e3b4"/>
+<input name="id" value="b6313f3d-84e3-4584-b8ff-3a791427e3b4"/>
+</li>
+<li class="cell_type run-only" hidden="">
+<label>
+<span class="label">cell type</span>
+<select name="cell_type">
+<option selected="" value="code">code</option>
+<option value="markdown">markdown</option>
+<option value="raw">raw</option>
+</select>
+</label>
+</li>
+<li class="input_type run-only">
+<label>
+<span class="label">input type</span>
+<select name="input_type" onchange="Cell.from(event).changeInputType();">
+<option value="text/html">html</option>
+<option value="application/javascript">js</option>
+<option value="text/plain">text</option>
+<option value="application/json">json</option>
+<option value="application/octet-stream">file</option>
+<option value="text/uri-list">url</option>
+<option disabled="" value="text/markdown">markdown</option>
+<option disabled="" value="application/x-yaml">yaml</option>
+<option disabled="" selected="" value="text/x-python">python</option>
+<option disabled="" value="application/toml">toml</option>
+<option disabled="" value="text/mermaid">mermaid</option>
+</select>
+</label>
+</li>
+<li class="runtime run-only" hidden="">
+<label>
+<span class="label">runtime</span>
+<select name="runtime" readonly="" tabindex="-1">
+<option selected="" value="text/plain">browser</option>
+</select>
+</label>
+</li>
+</menu>
+<details class="input" open="">
+<summary class="input execution_count">
+<span class="prefix"></span>
+<input name="execution_count" readonly="" tabindex="-1" value="None"/>
+<span class="suffix"></span>
+</summary>
+<section class="raw input">
+<textarea name="source" rows="0"></textarea>
+<fieldset name="files">
+<legend>attached files</legend>
+<ol>
+<li class="add filename">
+<span class="label">add file</span>
+<!-- when the file loads it should be possible to reset the input -->
+<input name="files" type="file"/>
+</li>
+</ol>
+</fieldset>
+<button class="run-only" type="submit">run</button>
+</section>
+<section class="source highlight">
+<slot name="highlight">
+</slot>
+</section>
+</details>
+</form>
+<details class="outputs" open="">
+<summary class="output execution_count">
+<span class="prefix"></span>
+<slot name="execution_count">None</slot>
+<span class="suffix"></span>
+</summary>
+<ol class="outputs" data-setsize="0">
+</ol>
+</details>
+</section>
+</li>
+</ol>
+</section>
+</dialog>
+<dialog id="removed:dialog">
+<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="removed:region">
+<form class="nb" id="removed" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup>
+<h1 id="title"><slot name="title">untitled</slot></h1>
+<p id="description"><slot name="description"></slot></p>
+</hgroup>
+<!-- edit-only run-only -->
+<dl class="metadata known edit-only">
+<dt class="title">
+<label for="nb:metadata:title">title</label>
+</dt>
+<dd class="title">
+<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
+</dd>
+<dt class="description">
+<label for="nb:metadata:description">description</label>
+</dt>
+<dd class="description">
+<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
+</dd>
+</dl>
+<dl class="metadata known">
+<dt class="updated_at empty">updated at</dt>
+<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
+<dt class="created_at empty">created at</dt>
+<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
+<dt class="author" data-authors="0">
+<label id="nb:metadata:authors">author<span class="plural">s</span></label>
+</dt>
+</dl>
+<details class="metadata unknown edit-only">
+<summary>metadata</summary>
+<dl class="metadata unknown">
+</dl>
+</details>
+<details class="summary" open="">
+<summary>summary</summary>
+<dl>
+<dt>statistics</dt>
+<dd class="statistics flex row">
+<span><slot name="cells_length">0</slot></span>
+<label>cells</label>
+<menu role="toolbar">
+<li class="execution">
+<select name="execution" readonly="" tabindex="-1">
+<option value="executed">executed</option>
+<option value="unexecuted">unexecuted</option>
+<option value="partially executed">partial executed</option>
+</select>
+</li>
+<li class="success">
+<select name="success" readonly="" tabindex="-1">
+<option value="successfully">successfully</option>
+<option value="unsuccessfully">unsuccessfully</option>
+</select>
+</li>
+<li class="order">
+<select name="order" readonly="" tabindex="-1">
+<option value="in uniform order">in uniform order</option>
+<option value="in order">in order</option>
+<option value="out of order">out of order</option>
+</select>
+</li>
+</menu>
+</dd>
+<dt>headings</dt>
+<dd><nav class="cells headings">
+<menu role="toolbar">
+<li>
+<label>
+<input name="show_cells" type="checkbox"/>
+                                show cells
+                            </label>
+</li>
+<li>
+<label>
+<input checked="" name="show_headings" type="checkbox"/>
+                                show headings
+                            </label>
+</li>
+</menu>
+<dl class="nav headings">
+</dl>
+</nav></dd></dl></details>
+
+<dt>layout</dt>
+<dd class="layout">
+<menu role="toolbar">
+<dl class="layout flex row" role="group">
+<dt>mode</dt>
+<dd>
+<label>
+<span class="label">mode</span>
+<select aria-controls="removed:region" name="mode" onchange="toggleClass(event);">
+<option selected="" value="read-mode">read mode</option>
+<option value="run-mode">run mode</option>
+<option value="edit-mode">edit mode</option>
+<option value="select-mode">select mode</option>
+</select>
+</label>
+<dt class="nv">horizontal layout</dt>
+<dd>
+<select name="horizontal">
+<option value="">compact</option>
+<option value="wide">wide</option>
+</select>
+</dd>
+<dt>columns</dt>
+<dd>
+<input name="columns" type="number" value="1"/>
+</dd>
+<dt>reverse</dt>
+<dd><input name="reverse" type="checkbox"/></dd>
+<dt>orientation</dt>
+<dd>
+<select aria-controls="removed:region" name="orientation" onchange="toggleClass(event)">
+<option value="">input above output</option>
+<option value="out-in">input below output</option>
+<option value="ltr">input left of output</option>
+<option value="rtl">input right of output</option>
+<option value="no-outputs">input only</option>
+<option value="no-source">output only</option>
+</select>
+</dd>
+</dd></dl>
+</menu>
+</dd>
+
+
+<script class="action">
+            //- html element actions that inputs can perform
+        </script>
+<menu class="" role="toolbar">
+<li class="run run-only">
+<button type="submit">run selected cells</button>
+</li>
+</menu>
+</form>
+<script class="metadata" type="application/json">{}</script>
+<!-- paginate and layout interface goes here -->
+<ol aria-multiselectable="false" aria-setsize="0" class="cells">
+</ol>
+</section>
+</dialog>
+<footer>
+<section class="activity">
+<details class="activity">
+<summary>Activity Log</summary>
+</details>
+<table class="activity">
+<thead>
+<tr>
+<th>time</th>
+<th>level</th>
+<th>message</th>
+<th>actions</th>
+<th>expires</th>
+</tr>
+</thead>
+</table>
+</section>
+<a href="#TOP" id="BOTTOM">skip to top</a>
+</footer>
+</body>
+</html>
+<script>
+    var input_types = {"file": "application/octet-stream", "html": "text/html", "js": "application/javascript", "json": "application/json", "markdown": "text/markdown", "mermaid": "text/mermaid", "python": "text/x-python", "text": "text/plain", "toml": "application/toml", "url": "text/uri-list", "yaml": "application/x-yaml"};
+    function closest(object, selector) {
+        if (object.matches(selector)) {
+            return object
+        } 
+        var closest = object.closest(selector);
+        if (closest) {
+            return closest;
+        }
+    }
+    class Notebook {
+        constructor(object) {
+            if (!object) {
+                object = document.querySelector("section.nb");
+            }
+            if (typeof object === "string") {
+                object = document.getElementById(object);
+            }
+            this.region = closest(object, "section.nb");
+            this.form = this.region.querySelector("form.nb");
+        }
+        getFormData() {
+            return new FormData(this.form);
+        }
+        getCellsOrder () {
+            const formData = this.getFormData();
+            return formData.getAll("cells");
+        }
+        getCell(index) {
+            const cellId = this.getCellsOrder()[index];
+            return Cell.from(document.getElementById(cellId));
+        }
+        getCells () {
+            const parent = this;
+            return this.getCellsOrder().map(id => new Cell(id, parent));
+        }
+        getNotebookData() {
+            // generate a notebook object based on the nbformat schema for notebooks using the form data
+            const formData = this.getFormData();
+            const notebook = Object.fromEntries(formData.entries());
+            const {title, description, authors, ...metadata} = notebook;
+            notebook.metadata = metadata;
+            notebook.metadata.title = title;
+            notebook.metadata.description = description;
+            notebook.metadata.authors = formData.getAll("nb:metadata:authors").map(name => ({name}));
+            notebook.cells = this.getCells().map(cell => cell.getCellData());
+            return notebook;
+        }
+        static from(object) {
+            return new Notebook(object.target || object);
+        }
+        updateMetadata(nb) {
+            return this
+        }
+        updateNav() {
+            const dl = newElement("dl")
+            this.region.querySelectorAll("ol.cells > li.cell > section.cell").forEach(
+                (cell, i) => {
+                    dl.appendChild(newElement("dt", {class: "cell"}, (i + 1).toString()))
+                    cell.querySelectorAll("details.outputs :not(dd[data-mime='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)").forEach(
+                        (heading) => {
+                            if (!heading.getAttribute("id")) {
+                                heading.setAttribute("id", slugify(heading.textContent))
+                            }
+                            dl.appendChild(newElement("dd", {class: "h"}, newElement(
+                                "a", {
+                                    href: `#${heading.getAttribute("id")}`
+                                }, heading.textContent 
+                            )))        
+                        }
+                    )
+                    
+                }
+            )
+            this.region.querySelector("dl.nav.headings").replaceChildren(...dl.children)
+        }
+        addCells(...cells) {
+            const cellsList = this.region.querySelector("ol.cells");
+            cells.map((cellData, i) => Cell.fromData(cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length})).forEach(cell => {
+                cellsList.appendChild(cell.region.parentElement);
+            });
+
+            const diagrams = this.region.querySelectorAll("code.language-mermaid");
+            document.forms["text/mermaid"]
+            return this
+        }
+        static fromData(object) {
+            const nb = new Notebook(this.newTemplate());
+            const cellsList = nb.region.querySelector("ol.cells");
+            nb.updateMetadata(object)
+            nb.region.querySelector("[name=cells_length]").textContent = object.cells.length
+            nb.region.querySelector("ol.cells").setAttribute("aria-setsize", object.cells.length)
+            nb.addCells(...object.cells);
+            nb.updateNav()
+            return nb
+        }
+        static newTemplate() {
+            return document.getElementById("nb:template").content.cloneNode(true).querySelector("section.nb");
+        }
+
+        // Additional methods to manipulate the notebook can be added here
+    }
+    function slugify(input) {
+        if (!input)
+            return '';
+
+        // make lower case and trim
+        var slug = input.toLowerCase().trim();
+
+        // remove accents from charaters
+        slug = slug.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+        // replace invalid chars with spaces
+        slug = slug.replace(/[^a-z0-9\s-]/g, ' ').trim();
+
+        // replace multiple spaces or hyphens with a single hyphen
+        slug = slug.replace(/[\s-]+/g, '-');
+
+        return slug;
+    }
+    class Cell {
+        constructor(object, parent, index) {
+            if (typeof object === "string") {
+                object = document.getElementById(object);
+            }
+            this.region = closest(object, "li.cell").querySelector("section");
+            this.form = this.region.querySelector("form.metadata");
+            this.outputs = [];
+            this.parent = parent;
+            this.index = index;
+        }
+        getNotebook() {
+            return Notebook.from(this.region);
+        }
+        getCellData() {
+            // generate a cell object based on the nbformat schema for notebooks using the form data
+            const formData = this.getFormData();
+            const cell = Object.fromEntries(formData.entries());
+            const {source, cell_type, id, execution_count, ...metadata} = cell;
+            cell.metadata = metadata;
+            if (cell_type === "code") {
+                cell.execution_count = parseInt(execution_count) || null;
+                cell.outputs = this.getOutputs();
+            } else {
+                delete cell.execution_count;
+                // delete cell.outputs;
+            }
+            return cell
+        }
+        getOutputs() {
+            const outputsSection = this.region.querySelector("details.outputs ol.outputs");
+            const outputArticles = Array.from(outputsSection.querySelectorAll("li.output"));
+            const outputs = outputArticles.map(article => {
+                const output = Output.from(article);
+                // return output.getOutputData();
+            });
+            return outputs;
+        }
+        getFormData() {
+            return new FormData(this.form);
+        }
+        static from(object, parent) {
+            if (object.cell_type) {
+                return Cell.fromData(object, parent)
+            }
+            return new Cell(object.target || object, parent);
+        }
+        static newTemplate() {
+            return document.getElementById("cell:template").content.cloneNode(true).querySelector("section.cell");   
+        }
+        static fromData(object, parent, options={}) {
+            const cell = new Cell(this.newTemplate(), parent, options.index);
+            object.id ??= crypto.randomUUID();
+            if (object.cell_type == "markdown") {
+                object.outputs = [newOutput({"text/markdown": object.source})]
+            }
+            cell.updateCell(object, options);
+            return cell
+        }
+        changeInputType() {
+            const formData = this.getFormData();
+            const input_type = formData.get("input_type");
+            this.region.classList.remove(...Object.values(input_types));
+            this.region.classList.add(input_type);
+        }
+        runCell() {
+            const cellData = this.getCellData();
+            this.outputsList().innerHTML = "";
+            const promises = new Runtime(cellData.metadata.runtime).runCell(this);
+        }
+        outputsList() {
+            return this.region.querySelector("details.outputs ol.outputs")
+        }
+        appendOutputs(...outputs) {
+            const outputsSection = this.outputsList();
+            outputs.forEach(outputData => {
+                outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(outputData).region));
+            });
+            this.region.dataset.outputs = outputs.length;
+            const graphs = outputsSection.querySelectorAll(".language-mermaid")
+            console.log(graphs)
+            if (graphs.length) {
+                console.log(graphs)
+                
+            }
+        }
+        updateCell(data, options = {}) {
+            // this.updateMetadata(data);
+            // this.updateExecutionCount(data);
+            this.region.querySelectorAll("form.cell [name=index]").forEach(
+                (index) => {
+                    index.textContent = options.index + 1;
+                }
+            )
+            this.region.querySelector("a.index").setAttribute("id", `cell:${options.index + 1}`)
+            this.region.querySelector("a.index").setAttribute("href", `#cell:${options.index + 1}`)
+            this.region.parentElement.setAttribute("pos-inset", data.index + 1)
+            this.region.parentElement.id = this.region.parentElement.id.replace("CELLID", data.id)
+
+            this.region.querySelector("[name=cells]").setAttribute("form", options.parent_id);  
+            this.form.setAttribute("id", data.id);
+            this.form.querySelector("[name=id]").value = data.id;
+            this.form.querySelector("[name=cells]").value = data.id;
+
+            this.form.execution_count.value = data.execution_count || -1;
+            this.region.querySelector("slot[name=execution_count]").textContent = this.form.execution_count.value;
+            this.region.dataset.executionCount = this.form.execution_count.value;
+            
+
+            const inputType = data.metadata.input_type || "text/html";
+            this.form.input_type.value = inputType;
+            this.updateSource(data);
+            // this.updateOutputs(data);
+            this.appendOutputs(...data.outputs || []);
+            return this
+        }
+        updateSource(data) {
+            if ("source" in data) {
+                const sourceTextarea = this.region.querySelector("details.input textarea[name='source']");
+                let source = data.source;
+                if (source.join) {
+                    source = source.join("");
+                }
+                this.region.dataset.sloc = source.split("\n").filter(x => x.trim()).length
+                sourceTextarea.textContent = source;
+                sourceTextarea.rows = (source.split("\n").length || 0 ) + 1;
+                // const highlightSlot = this.region.querySelector("section.source.highlight slot[name='highlight']");
+                // highlightSlot.innerHTML = newElement("code", {}, data.source).outerHTML;
+            }
+        }
+        // Additional methods to manipulate the cell can be added here
+    }
+    function newElement(tag, attributes={}, ...children) {
+        const element = document.createElement(tag);
+        for (const [key, value] of Object.entries(attributes)) {
+            element.setAttribute(key, value);
+        }
+        children.forEach(child => {
+            if (typeof child === "string") {
+                element.appendChild(document.createTextNode(child));
+            } else {
+                element.appendChild(child);
+            }
+        });
+        return element;
+    }
+    function newElementsFromString(string) {
+        const template = newElement('template');
+        template.innerHTML = string.trim();
+        return template.content.childNodes;
+    }
+    const escapeHtml = unsafe => {
+        return unsafe
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    };
+
+
+    class Output {
+        constructor(object) {
+            this.region = object;
+        }
+        static from(object) {
+            if (object.output_type) {
+                // object is already an output object
+                return Output.fromData(object);
+            }
+            return new Output(object.target || object);
+        }
+        static fromData(data) {
+            if (["execute_result", "display_data"].includes(data.output_type)) {
+                return Output.fromDisplayData(data);
+            } else if (data.output_type == "stream") {
+                return new Output(
+                    newElement("dl",
+                        {class: `output ${data.output_type}`},
+                        newElement("dt", {class: "stream"}, data.name),
+                        newElement("dd", 
+                            {class: `stream ${data.name}`, "data-mime": data.name},
+                            newElement("pre", newElement("code", {}, data.text.join(""))
+                        ))
+                    )
+                )
+            } else if (data.output_type == "error") {
+                const traceback = data.traceback.map(
+                    line => newElement("dd", 
+                        {class: "traceback", "data-mime": "text/plain"},
+                        newElement("pre", {}, newElement("code", line))
+                    )
+                );
+                return new Output(
+                    newElement("dl",
+                        {class: `output ${data.output_type}`},
+                        newElement("dt", {class: `error ${data.output_type}`}, data.ename ),   
+                        newElement("dd", 
+                            {},
+                            newElement("pre", 
+                                {}, newElement("code", {class: `evalue ${data.name}`, "data-mime": data.name}, data.evalue)
+                            )
+                        ),
+                        ...traceback,
+                        
+                    )
+                )
+
+            } else {
+                //silentyly fail other output types
+            }
+        }
+        static fromDisplayData(data) {
+            debugger
+            const mimeBundle = data.data;
+            const metadata = data.metadata;
+            const dl = newElement('dl', {class: `output ${data.output_type}`});
+            const xmlMimes = ["text/html", "image/svg+xml"];
+            const processedMime = [...xmlMimes, "text/plain", "application/json+ipynb"];
+            for (const mime of xmlMimes) {
+                if (mimeBundle[mime]) {
+                    let body = mimeBundle[mime];
+                    if (body.join) {
+                        body = body.join("");
+                    } 
+                    dl.appendChild(newElement("dt", {class: `mime ${mime}`}, mime));
+                    dl.appendChild(
+                        newElement("dd", 
+                            {class: `mime ${mime}`, "data-mime": mime},
+                            ...newElementsFromString(body),
+                        )
+                    )
+                }
+            }
+            if ("application/json+ipynb" in mimeBundle) {
+                let body = mimeBundle["application/json+ipynb"];
+                dl.appendChild(newElement("dt", {class: `mime application/json+ipynb`}, "application/json+ipynb"));
+                const options = {class: `mime application/json+ipynb`, "data-mime": "application/json+ipynb"}
+                const src = metadata["application/json+ipynb"].src;
+                const target = newElement("script", options);
+                const dd = newElement("dd", options, target);
+                dl.appendChild(dd);
+                if (src) {
+                    options.src = src;
+                    if (!target.textContent) {
+                        fetch(src).then(response => {
+                            if (response.ok) {
+                                return response.text()
+                            }
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }).then(text => {
+                            target.__data__ = JSON.parse(text);
+                            const notebook = Notebook.fromData(target.__data__);
+                            dd.appendChild(notebook.region);
+                        }).catch(error => {
+                            console.error(error)
+                            dd.appendChild(Output.fromData(newError(error)).region)
+                        });
+                    }
+                }
+            }
+            
+            if (mimeBundle["text/markdown"]) {
+                if (!mimeBundle["text/html"]) {
+                    let body = mimeBundle["text/markdown"];
+                    if (body.join) {
+                        body = body.join("");
+                    } 
+                    const dt = newElement("dt", {class: `mime text/markdown`}, "text/markdown")
+                    dl.appendChild(dt);
+                    processedMime.push("text/markdown")
+                    document.forms["text/markdown"].render(body).then((html) => {
+                        const dd =  newElement("dd", 
+                            {class: `mime text/html`, "data-mime": "text/html"},
+                            ...newElementsFromString(html),
+                        );
+                        dt.insertAdjacentElement("afterend", dd);
+                        Output.postUpdate(dd)
+                    })
+                }
+            }
+            if (mimeBundle["text/plain"]) {
+                let body = mimeBundle["text/plain"];
+                if (body.join) {
+                    body = body.join("");
+                } 
+                dl.appendChild(newElement("dt", {class: "mime text/plain"}, "text/plain"));
+                dl.appendChild(
+                    newElement("dd",
+                        {class: "mime text/plain", "data-mime": "text/plain"}, 
+                        body
+                    )
+                )
+            }
+            for (const mime in mimeBundle) {
+                if (!processedMime.includes(mime)) {
+                    const target = [];
+                    let body = mimeBundle[mime];
+                    if (mime.startsWith("text")) {
+                        if (body.join) {
+                            body = body.join("");
+                        }
+                    }
+                    if (mime.startsWith("application/json")) {
+                        target.push(newElement(
+                            "script",
+                            {type: mime},
+                            JSON.stringify(body, null, 2)
+                        ))
+                    } else if (mime.startsWith("image/")) {
+                        if (body.join) {
+                            body = body.join("");
+                        }   
+                        target.push(newElement(
+                            "img", 
+                            {
+                                src: `data:${mime};base64,${body}`,
+                                alt: metadata[mime]?.alt || "Image"
+                            }
+                        ))
+                    } else {
+                        let type = mime;
+                        if (mime == "application/javascript") {
+                            type = "module";
+                        }
+                        if (typeof body === "object") {
+                            body = JSON.stringify(body, null, 2);
+                        }
+                        if (body.join) {
+                            body = body.join("");
+                        }
+                        target.push(newElement(
+                            "script",
+                            {type: type},
+                            body
+                        ))
+                    }
+                    dl.appendChild(newElement("dt", {class: `mime ${mime}`}, mime));
+                    dl.appendChild(
+                        newElement("dd", {class: `mime ${mime}`, "data-mime": mime}, ...target)
+                    )
+                }
+            }
+            return new Output(dl)
+        }
+
+        static postUpdate(region) {
+            const graphs = region.querySelectorAll(".language-mermaid")
+            if (graphs.length) {
+                document.forms["text/mermaid"].run({nodes: graphs})
+            }
+            return this
+        }
+
+
+        // Additional methods to manipulate the output can be added here
+    }
+    class Runtime {
+        constructor(object) {
+            if (typeof object === "string") {
+                object = document.getElementById(object);
+            }
+            this.form = object || document.forms["text/plain"];
+        }
+        getRunner() {
+            return this.form.__data__;
+        }
+        runCell(cell, input_type="") {
+            const cellData = cell.getCellData();
+            if (!input_type) {
+                input_type = cellData.metadata.input_type;
+            }
+
+            return this.getRunner()(cell, this).then(
+                (outputs) => {
+                    cell.appendOutputs(...outputs);
+                }
+            );
+        }
+    }
+    function onLoad() {
+        const queryParams = new URLSearchParams(window.location.search);
+        const sources = queryParams.getAll("source");
+        if (sources.length) {
+            const nb = {
+                cells: sources.map(
+                    (source) => {
+                        return {
+                            source: source,
+                            cell_type: "code",
+                            metadata: {
+                                input_type: "text/uri-list"
+                            }
+                        }
+                    }
+                )
+            }
+            const notebook = Notebook.fromData(nb);
+            const notebookSection = document.querySelector("section.nb");
+            notebookSection.replaceWith(notebook.region);
+            debugger
+            notebook.getCells().forEach(cell => cell.runCell());
+        }
+    }
+    document.body.onload = onLoad;
+</script>
+<style class="core">
+    :root {
+        --width: 100%;
+    }
+    :not(.wide) {
+        img {
+            max-width: 100%;
+        }
+    }
+    .wide {
+        overflow-x: auto;
+        section.nb {
+            width: max-content;
+            min-width: 100%;
+
+            section.cell {
+                width: max-content;
+                min-width: 100%;
+                textarea[name="source"] {
+                    resize: both;
+                }
+            }
+        }        
+    }
+    .flex {
+        display: flex;
+        &.row {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        &.column {
+            flex-direction: column;
+        }
+    }
+    body {
+        overflow-x: none;
+        li.output {
+            overflow-x: auto;
+        }
+    }
+    [readonly] {
+        border: none;
+        font-family: inherit;
+        font-size: inherit;
+        padding: unset;
+        width: auto;
+        input&, select& {
+            display: inline;
+        }
+        &[tabindex="-1"]:not(textarea[name=source]) {
+            pointer-events: none;
+        }  
+    }
+    section.nb[data-highlight-theme=""] {
+        section.highlight {
+            display: none;
+        }
+    }
+    section.cell {
+        fieldset[name="files"] {
+            display: none;
+        }
+        &.application\/octet-stream {
+            fieldset[name="files"] {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            textarea[name="source"] {
+                display: none;
+
+            }
+        }
+    }
+    summary.execution_count {
+        width: fit-content;
+    }
+    details.activity:not([open]) + table.activity,
+    .nv:not(:focus-within):not(:active), 
+    .non-visual:not(:focus-within):not(:active), 
+    .sr-only:not(:focus-within):not(:active) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+    }
+    textarea[name=source] {
+        font-family: monospace;
+        font-size: 1em;
+        width: 100%;
+        resize: vertical;
+    }
+    menu[role="toolbar"], header>menu {
+        display: flex;
+        width: var(--width);
+        flex-wrap: wrap;
+        flex-direction: row;
+        list-style: none; 
+        padding-left: unset;
+        & > li:not(:last-of-type) {
+            margin-bottom: 1em;
+            margin-right: 1em;
+        }
+    }
+    ol.cells, ol.outputs {
+        list-style: none;
+        padding-left: unset;
+    }
+    details.outputs :is(h1, h2, h3, h4, h5, h6) {
+        display: inline-block
+    }
+    a.h {
+        margin-right: 1em;
+    }
+    details.outputs dt.mime {
+        display: none;
+    }
+    nav.cells dl.nav {
+        &:not(.headings) dd, &:not(.cells) dt {
+            display: none;
+        }
+    }
+    details.site[data-entries="0"] {
+        display: none;
+    }
+    dl.output, dl.summary{
+        &>dd, &>dt {
+            margin-left: 1rem;
+        }
+    }
+    form.nb, details.input, details.outputs {
+        &>* {
+            margin: 1em;
+        }
+    }
+</style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+html {
+    font-family: "Atkinson Hyperlegible";
+}
+:root {
+    --focus: 3px;
+}
+section.nb:focus-visible,
+section.cell:focus-visible,
+:focus-visible {
+    outline: var(--focus) solid;
+    box-shadow: 0 0 0 calc(2 * var(--focus));
+    
+}
+section.cell:focus-within {
+    outline-style: dashed;
+}
+section.nb:focus-within {
+    outline-style: dotted;
+}
+</style>
+<style class="display_data">
+    script[type="text/markdown"] {
+        display: block;
+    }
+</style>
+<style class="modes">
+    section.read-mode:not(.run-mode):not(.edit-mode),
+    section.nb:not(.run-mode):not(.edit-mode) {
+        form.nb, section.cell {
+            .run-only, .edit-only {
+                display: none;
+            }
+            &.text\/markdown {
+                form.cell {
+                    display: none;
+                }
+            }
+        }
+        section.cell[data-sloc="0"] {
+            details.input:first-of-type {
+                display: none;
+            }
+        }
+        section.cell[data-outputs="0"] {
+            details.outputs:first-of-type {
+                display: none;
+            }
+        }
+    }
+    section.nb:not(.edit-mode),
+    section.nb.run-mode:not(.edit-mode) {
+        form.nb, section.cell {
+            .edit-only {
+                display: none;
+            }   
+        }
+    }
+    .select-only {
+        display: none;
+    }
+    input[name=current]:not(:focus):not(:checked) {
+        opacity: 0;
+    }
+    dt.empty {
+        display: none;
+        & ~ :not(dt) {
+            display: none;
+        }
+    }
+    dt[data-authors="0"] {
+        display: none;
+        & ~ :not(dt) {
+            display: none;
+        }
+    }
+    dd.statistics>* {
+        margin-right: 1em;
+    }
+    dl.layout > dt {
+        display: none;
+    }
+    section.nb.no-source form.cell {
+        display: none;
+    }
+    section.nb.no-outputs details.outputs {
+        display: none;
+    }
+    section.nb.no-metadata {
+        form.nb {
+            display: none;
+        }
+    }
+    section.cell {
+        grid-template-rows: auto auto auto;
+        grid-template-columns: auto auto;
+        form.cell {
+            grid-template-columns: subgrid;
+            grid-template-rows: subgrid;
+            &>menu  {
+                grid-area: label;
+            }
+            &>details.source {
+                grid-area: source;
+            }
+        }
+        &>details.outputs {
+            grid-area: outputs;
+        }
+    }
+    
+    section.nb.out-in {
+        section.cell {
+            display: grid;
+            form.cell {
+                display: grid;
+                &>menu  {
+                    grid-row: 1/2;
+                    grid-column: 1/3;
+                }
+                &>details.input {
+                    grid-row: 3/4;
+                    grid-column: 1/3;
+                }
+            }
+            &>details.outputs {
+                grid-row: 2/3;
+                grid-column: 1/3;
+            }
+        }
+    }
+    dl.output {
+        & dd[data-mime="text/html"] ~ * {
+            display: none;
+        }
+        & dd[data-mime="text/markdown"] ~ * {
+            display: none;
+        }
+    }
+
+    section.cell[data-execution-count="-1"] > form > details.input > summary.execution_count,
+    section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count {
+        & > [name=execution_count] {
+            display: none;
+        }
+    }
+    section.cell[data-execution-count="-1"] > form > details.input > summary.execution_count::before {
+        content: "input";
+    }
+    section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count::before {
+        content: "output";
+    }
+</style>

@@ -1,0 +1,9 @@
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "nbref"
+authors = [{name = "a11yhood", email = "tony.fast@gmail.com"}]
+readme = "README.md"
+dynamic = ["version", "description"]
