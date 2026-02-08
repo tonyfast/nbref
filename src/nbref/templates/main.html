@@ -90,11 +90,11 @@
 {% set authors = nb.metadata.authors | default([]) %}
 {% set title = nb.metadata.title | default("") %}
 {% set nb_classes = config.nb_classes | default("") %}
-<section id="{{root_id}}:region" class="nb {{nb_classes}}" aria-labelledby="{{root_id}}:title" aria-describedby="description" aria-modal="false" data-readonly="true" data-highlight-theme="">
+<section id="{{root_id}}:region" class="nb {{nb_classes}}" aria-labelledby="{{root_id}}:title" aria-describedby="{{root_id}}:desc" aria-modal="false" data-readonly="true" data-highlight-theme="">
     <form id="{{root_id}}" class="nb metadata" method="dialog" onsubmit="Cell.from(event).runCell();">
         <hgroup>
             <h1 id="{{root_id}}:title">
-                <slot name="title"></slot>
+                <slot name="title">{{title}}</slot>
                 <span class="default">untitled notebook</span>
             </h1>
             <p id="{{root_id}}:desc">
@@ -108,7 +108,7 @@
             </li>
             <li class="description">
                 <label for="{{root_id}}metadata:description">description</label>  
-                <textarea id="{{root_id}}metadata:description" name="{{root_id}}metadata:description" placeholder=""{{readonly_attr}}>{{nb.metadata.description | default("")}}</textarea>
+                <textarea id="{{root_id}}:metadata:description" name="{{root_id}}:metadata:description" placeholder=""{{readonly_attr}}>{{nb.metadata.description | default("")}}</textarea>
             </li>
         </ol>
         <ol class="metadata known">

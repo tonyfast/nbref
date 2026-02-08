@@ -1,6 +1,6 @@
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
-import json
+import json, argparse
 from uuid import uuid4
 from toolz.curried import get, compose, concatv, merge, map , pipe
 import slugify
@@ -9,7 +9,6 @@ import bs4
 import markdown_it
 DIR = Path(__file__).parent
 from json import dumps
-env = Environment(loader=FileSystemLoader(DIR / "templates"), enable_async=True)
 import pygments.util, pygments.lexers, pygments.formatters
 
 def tag(name, *contents, **attrs):
@@ -26,25 +25,60 @@ def highlight(code, lang):
     formatter = pygments.formatters.HtmlFormatter(nowrap=True)
     return pygments.highlight(code, lexer, formatter)
 
-env.globals.update(
-    uuid=compose(str, uuid4),
-)
-env.filters.update(
-    highlight=highlight,
-    dumps = json.dumps,
-    splitlines=str.splitlines,
-    get=get,
-    str=str,
-    setitem=lambda c, a, b: setitem(a, b, c),
-    markdown=markdown_it.MarkdownIt().render,
-    concat=compose(list, concatv),
-    merge=merge,
-    sloc = lambda x: len(list(filter(bool, map(str.strip, "".join(x).splitlines()))))
-)
-tpl = env.get_template("main.html")
-nb = json.loads((DIR.parent.parent / "docs/index.ipynb").read_text())
-settings = json.loads((DIR / "templates" / "settings.ipynb").read_text())
-target = DIR / "example.html"
+def get_environment():
+    env = Environment(loader=FileSystemLoader(DIR / "templates"), enable_async=True)
+    env.globals.update(
+        uuid=compose(str, uuid4),
+    )
+    env.filters.update(
+        highlight=highlight,
+        dumps = json.dumps,
+        splitlines=str.splitlines,
+        get=get,
+        str=str,
+        setitem=lambda c, a, b: setitem(a, b, c),
+        markdown=markdown_it.MarkdownIt().render,
+        concat=compose(list, concatv),
+        merge=merge,
+        sloc = lambda x: len(list(filter(bool, map(str.strip, "".join(x).splitlines()))))
+    )
+    return env
+    
+def get_settings_document():
+    return json.loads((DIR / "templates" / "settings.ipynb").read_text())
+
+async def arender_notebook(
+    nb: Path=None, template="main.html", target=None, **config
+):
+    import anyio
+    if nb is None:
+        nb = DIR.parent.parent / "docs/index.ipynb"
+    if target is None:
+        target = DIR / "example.html"    
+    data = json.loads(await anyio.Path(nb).read_text())
+    env = get_environment()
+    tpl = env.get_template("main.html")
+    prepare_notebook(data)
+    html = await env.get_template("main.html").render_async(
+        nb=data,
+        settings=get_settings_document(),
+        config=config
+    )
+    soup = bs4.BeautifulSoup(html, "html.parser")
+    ammend_attachments(data, soup)
+    ammend_headings(soup)
+    return soup
+    
+
+async def awrite_notebook(
+    target, nb: Path=None, template="main.html", **config
+):
+    import anyio
+    soup = await arender_notebook(nb, template, target, **config)
+    file = anyio.Path(nb)
+    await anyio.Path(target).write_text(str(soup))
+    print(F"wrote {target.absolute()}")
+    
 
 def get_unified_attachments(nb):
     return pipe(
@@ -54,7 +88,7 @@ def get_unified_attachments(nb):
 def ammend_attachments(nb, soup):
     attachments = get_unified_attachments(nb)
     if attachments:
-        soup = bs4.BeautifulSoup(html, features="html.parser")
+        # soup = bs4.BeautifulSoup(soup, features="html.parser")
         for img in soup.select("img[src^='attachment']"):
             src = img.attrs.get("src", "")
             key = src.removeprefix("attachment:")
@@ -68,6 +102,38 @@ def ammend_attachments(nb, soup):
                     break
     return soup
 
+def prepare_notebook(nb):
+    for cell in nb["cells"]:
+        if cell["cell_type"] == "markdown":
+            string = "".join(cell.get("source", ""))
+            if string.lstrip():
+                cell["outputs"] = [dict(
+                    output_type="display_data",
+                    data={
+                        "text/markdown": cell["source"]
+                    }
+                )]
+async def arender(nb):
+    for cell in nb["cells"]:
+        if cell["cell_type"] == "markdown":
+            string = "".join(cell.get("source", ""))
+            if string.lstrip():
+                cell["outputs"] = [dict(
+                    output_type="display_data",
+                    data={
+                        "text/markdown": cell["source"]
+                    }
+                )]
+    html = tpl.render(nb=nb, settings=settings, config=dict(
+        readonly=False
+    ))
+    soup = bs4.BeautifulSoup(html, "html.parser")
+    ammend_attachments(nb, soup)
+    ammend_headings(soup)
+    
+    return str(soup)
+    
+    
 def render(nb):
     for cell in nb["cells"]:
         if cell["cell_type"] == "markdown":
@@ -97,7 +163,7 @@ def ammend_headings(soup):
             listing.append(local_headings)
         for h in hs:
             if not h.has_attr("id"):
-                h["id"] = id = slugify.slugify(h.string)
+                h["id"] = id = slugify.slugify(" ".join(x.string or "" for x in h))
             a = tag("a", str(h.string), href=F"#{id}")
             local_headings.append(
                 tag("li", a, **{"data-level": h.name[1]})
@@ -106,7 +172,32 @@ def ammend_headings(soup):
                 tag("a", "¶", href=F"#{id}", **{"class": "h"})
             )
     return soup
-        
-
-target.write_text(render(nb))
-print(F"wrote {target.absolute().as_uri()}")
+    
+parser = argparse.ArgumentParser()
+parser.add_argument("file", nargs="*")
+parser.add_argument("-d", "--dir", default=None)
+parser.add_argument("--stdout", action="store_true")
+def main(argv=None):
+    import asyncio, anyio
+    ns = parser.parse_args(argv)
+    file = Path(ns.file[0])
+    coro = []
+    
+    for file in map(Path, ns.file):
+        if ns.stdout:
+            ...
+        else:
+            target = (
+                Path(ns.dir) if ns.dir else file.parent
+            ) / file.with_suffix(".html").name #(file.name + ".html")
+            coro.append(awrite_notebook(target, ns.file[0]))
+    if coro:
+        anyio.run(asyncio.gather, *coro)
+    
+    
+    
+if __name__ == "__main__":
+    main()
+    
+# target.write_text(render(nb))
+# print(F"wrote {target.absolute().as_uri()}")
