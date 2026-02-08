@@ -26,8 +26,8 @@
 <meta content="" property="og:author"/>
 <meta content="" property="og:keywords"/>
 </head>
-<body class="">
-<header>
+<body id="BODY">
+<header id="HEADER">
 <menu>
 <li>
 <a accesskey="(" class="skip" href="#MAIN">skip to main </a>
@@ -53,109 +53,104 @@
 <ol></ol>
 </details>
 </nav>
-<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="nb:region">
-<form class="nb" id="nb" method="dialog" onsubmit="Cell.from(event).runCell();">
+<section aria-describedby="description" aria-labelledby="nb:title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="nb:region">
+<form class="nb metadata" id="nb" method="dialog" onsubmit="Cell.from(event).runCell();">
 <hgroup>
-<h1 id="title"><slot name="title">untitled</slot></h1>
-<p id="description"><slot name="description"></slot></p>
+<h1 id="nb:title">
+<slot name="title"></slot>
+<span class="default">untitled notebook</span>
+</h1>
+<p id="nb:desc">
+<slot name="description"></slot>
+</p>
 </hgroup>
-<!-- edit-only run-only -->
-<dl class="metadata known edit-only">
-<dt class="title">
+<ol class="metadata known edit-only">
+<li class="title">
 <label for="nb:metadata:title">title</label>
-</dt>
-<dd class="title">
 <input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
-</dd>
-<dt class="description">
-<label for="nb:metadata:description">description</label>
-</dt>
-<dd class="description">
-<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
-</dd>
-</dl>
-<dl class="metadata known">
-<dt class="updated_at empty">updated at</dt>
-<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
-<dt class="created_at empty">created at</dt>
-<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
-<dt class="author" data-authors="0">
+</li>
+<li class="description">
+<label for="nbmetadata:description">description</label>
+<textarea id="nbmetadata:description" name="nbmetadata:description" placeholder=""></textarea>
+</li>
+</ol>
+<ol class="metadata known">
+<li class="updated_at empty">
+<label>updated at</label>
+<slot name="updated_at"><time></time></slot>
+</li>
+<li class="created_at empty">
+<label>created at</label>
+<slot name="created_at"><time></time></slot>
+</li>
+<li class="authors" data-authors="0">
 <label id="nb:metadata:authors">author<span class="plural">s</span></label>
-</dt>
-</dl>
+<ol class="author">
+</ol>
+</li>
+</ol>
 <details class="metadata unknown edit-only">
 <summary>metadata</summary>
-<dl class="metadata unknown">
-<dt class="language_info">
+<ul class="metadata unknown">
+<li>
 <label for="nb:metadata:language_info">language_info</label>
-</dt>
-<dd class="language_info">
 <input id="nb:metadata:language_info" name="language_info" readonly="" tabindex="-1" type="text" value="{'name': 'python'}"/>
-</dd>
-</dl>
+</li>
+</ul>
 </details>
-<details class="summary" open="">
-<summary>summary</summary>
-<dl>
-<dt>statistics</dt>
-<dd class="statistics flex row">
+<details class="headings" open="">
+<summary>headings</summary>
+<p class="flex row">
 <span><slot name="cells_length">2</slot></span>
-<label>cells</label>
-<menu role="toolbar">
-<li class="execution">
 <select name="execution" readonly="" tabindex="-1">
 <option value="executed">executed</option>
 <option value="unexecuted">unexecuted</option>
 <option value="partially executed">partial executed</option>
 </select>
-</li>
-<li class="success">
 <select name="success" readonly="" tabindex="-1">
 <option value="successfully">successfully</option>
 <option value="unsuccessfully">unsuccessfully</option>
 </select>
-</li>
-<li class="order">
 <select name="order" readonly="" tabindex="-1">
 <option value="in uniform order">in uniform order</option>
 <option value="in order">in order</option>
 <option value="out of order">out of order</option>
 </select>
-</li>
-</menu>
-</dd>
-<dt>headings</dt>
-<dd><nav class="cells headings">
+</p>
+<nav class="cells headings">
 <menu role="toolbar">
 <li>
 <label>
 <input name="show_cells" type="checkbox"/>
-                                show cells
-                            </label>
+                            show cells
+                        </label>
 </li>
 <li>
 <label>
 <input checked="" name="show_headings" type="checkbox"/>
-                                show headings
-                            </label>
+                            show headings
+                        </label>
 </li>
 </menu>
-<dl class="nav headings">
-<dt data-cell="1">
+<ol class="nav headings">
+<li aria-controls="" class="cell" data-cell="1">
 <a href="#cell:1">
-                                cell 1        
-                            </a>
-</dt><dd data-level="1"><a href="#settings">settings</a></dd><dd data-level="1"><a href="#reference-notebook-documentation">reference notebook documentation</a></dd>
-<dt data-cell="2">
+<span>cell </span>
+<slot name="index">1</slot>
+</a>
+<ol><li data-level="1"><a href="#reference-notebook-documentation">reference notebook documentation</a></li></ol></li>
+<li aria-controls="" class="cell" data-cell="2">
 <a href="#cell:2">
-                                cell 2        
-                            </a>
-</dt><dd data-level="2"><a href="#accesssibility-settings">accesssibility settings</a></dd>
-</dl>
-</nav></dd></dl></details>
+<span>cell </span>
+<slot name="index">2</slot>
+</a>
+</li>
+</ol>
+</nav></details>
 
-<dt>layout</dt>
-<dd class="layout">
+
+<details class="layout">
+<summary>layout</summary>
 <menu role="toolbar">
 <dl class="layout flex row" role="group">
 <dt>mode</dt>
@@ -195,9 +190,7 @@
 </dd>
 </dd></dl>
 </menu>
-</dd>
-
-
+</details>
 <script class="action">
             //- html element actions that inputs can perform
         </script>
@@ -207,12 +200,13 @@
 </li>
 </menu>
 </form>
+<hr/>
 <script class="metadata" type="application/json">{"language_info": {"name": "python"}}</script>
 <!-- paginate and layout interface goes here -->
 <ol aria-multiselectable="false" aria-setsize="2" class="cells">
 <li aria-posinset="1" class="cell markdown" id="cell:1">
-<section class="cell markdown text/markdown" data-execution-count="-1" data-outputs="0" data-sloc="">
-<form class="cell metadata" id="9c679b04-7063-4935-86bb-2152b25f7919" method="dialog" onsubmit="Cell.from(event).runCell();">
+<section class="cell markdown text/markdown" data-execution-count="-1" data-outputs="1" data-sloc="">
+<form class="cell metadata" id="c9323ff4-e916-4055-ab80-80b225bb88a7" method="dialog" onsubmit="Cell.from(event).runCell();">
 <hgroup class="run-only">
 <h2>
 <slot name="title"></slot>
@@ -232,8 +226,8 @@
 <li class="current"><input form="nb" name="current" type="radio"/></li>
 <li class="selected select-only"><input form="nb" name="selected" type="checkbox"/></li>
 <li class="id edit-only">
-<input form="nb" hidden="" name="cells" value="9c679b04-7063-4935-86bb-2152b25f7919"/>
-<input name="id" value="9c679b04-7063-4935-86bb-2152b25f7919"/>
+<input form="nb" hidden="" name="cells" value="c9323ff4-e916-4055-ab80-80b225bb88a7"/>
+<input name="id" value="c9323ff4-e916-4055-ab80-80b225bb88a7"/>
 </li>
 <li class="cell_type run-only" hidden="">
 <label>
@@ -308,11 +302,11 @@ notebook templates build from aria and pour accessibility principles.
 <slot name="execution_count">-1</slot>
 <span class="suffix"></span>
 </summary>
-<ol class="outputs" data-setsize="0">
+<ol class="outputs" data-setsize="1">
 <li class="output display_data">
-<dl class="output display_data" id="9c679b04-7063-4935-86bb-2152b25f7919:outputs:0">
+<dl class="output display_data" id="c9323ff4-e916-4055-ab80-80b225bb88a7:outputs:0">
 <dt class="mime">text/markdown</dt>
-<dd class="mime display_data" data-mime="text/markdown" id="9c679b04-7063-4935-86bb-2152b25f7919:outputs:1:text/markdown">
+<dd class="mime display_data" data-mime="text/markdown" id="c9323ff4-e916-4055-ab80-80b225bb88a7:outputs:1:text/markdown">
 <a class="h" href="#reference-notebook-documentation">¶</a><h1 id="reference-notebook-documentation">reference notebook documentation</h1>
 <p>notebook templates build from aria and pour accessibility principles.</p>
 </dd>
@@ -324,7 +318,7 @@ notebook templates build from aria and pour accessibility principles.
 </li>
 <li aria-posinset="2" class="cell markdown" id="cell:2">
 <section class="cell markdown text/markdown" data-execution-count="-1" data-outputs="0" data-sloc="">
-<form class="cell metadata" id="be37edce-a346-49cc-9524-315de3ad3ff1" method="dialog" onsubmit="Cell.from(event).runCell();">
+<form class="cell metadata" id="6698a625-30d3-461b-9f3c-6d66574de571" method="dialog" onsubmit="Cell.from(event).runCell();">
 <hgroup class="run-only">
 <h2>
 <slot name="title"></slot>
@@ -344,8 +338,8 @@ notebook templates build from aria and pour accessibility principles.
 <li class="current"><input form="nb" name="current" type="radio"/></li>
 <li class="selected select-only"><input form="nb" name="selected" type="checkbox"/></li>
 <li class="id edit-only">
-<input form="nb" hidden="" name="cells" value="be37edce-a346-49cc-9524-315de3ad3ff1"/>
-<input name="id" value="be37edce-a346-49cc-9524-315de3ad3ff1"/>
+<input form="nb" hidden="" name="cells" value="6698a625-30d3-461b-9f3c-6d66574de571"/>
+<input name="id" value="6698a625-30d3-461b-9f3c-6d66574de571"/>
 </li>
 <li class="cell_type run-only" hidden="">
 <label>
@@ -418,9 +412,9 @@ notebook templates build from aria and pour accessibility principles.
 </summary>
 <ol class="outputs" data-setsize="0">
 <li class="output display_data">
-<dl class="output display_data" id="be37edce-a346-49cc-9524-315de3ad3ff1:outputs:0">
+<dl class="output display_data" id="6698a625-30d3-461b-9f3c-6d66574de571:outputs:0">
 <dt class="mime">text/markdown</dt>
-<dd class="mime display_data" data-mime="text/markdown" id="be37edce-a346-49cc-9524-315de3ad3ff1:outputs:1:text/markdown">
+<dd class="mime display_data" data-mime="text/markdown" id="6698a625-30d3-461b-9f3c-6d66574de571:outputs:1:text/markdown">
 </dd>
 </dl>
 </li>
@@ -431,93 +425,88 @@ notebook templates build from aria and pour accessibility principles.
 </ol>
 </section>
 <template id="nb:template">
-<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="NBID:region">
-<form class="nb" id="NBID" method="dialog" onsubmit="Cell.from(event).runCell();">
+<section aria-describedby="description" aria-labelledby="NBID:title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="NBID:region">
+<form class="nb metadata" id="NBID" method="dialog" onsubmit="Cell.from(event).runCell();">
 <hgroup>
-<h1 id="title"><slot name="title">untitled</slot></h1>
-<p id="description"><slot name="description"></slot></p>
+<h1 id="NBID:title">
+<slot name="title"></slot>
+<span class="default">untitled notebook</span>
+</h1>
+<p id="NBID:desc">
+<slot name="description"></slot>
+</p>
 </hgroup>
-<!-- edit-only run-only -->
-<dl class="metadata known edit-only">
-<dt class="title">
-<label for="nb:metadata:title">title</label>
-</dt>
-<dd class="title">
-<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
-</dd>
-<dt class="description">
-<label for="nb:metadata:description">description</label>
-</dt>
-<dd class="description">
-<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
-</dd>
-</dl>
-<dl class="metadata known">
-<dt class="updated_at empty">updated at</dt>
-<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
-<dt class="created_at empty">created at</dt>
-<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
-<dt class="author" data-authors="0">
-<label id="nb:metadata:authors">author<span class="plural">s</span></label>
-</dt>
-</dl>
+<ol class="metadata known edit-only">
+<li class="title">
+<label for="NBID:metadata:title">title</label>
+<input id="NBID:metadata:title" name="NBID:metadata:title" placeholder="untitled" type="text" value=""/>
+</li>
+<li class="description">
+<label for="NBIDmetadata:description">description</label>
+<textarea id="NBIDmetadata:description" name="NBIDmetadata:description" placeholder=""></textarea>
+</li>
+</ol>
+<ol class="metadata known">
+<li class="updated_at empty">
+<label>updated at</label>
+<slot name="updated_at"><time></time></slot>
+</li>
+<li class="created_at empty">
+<label>created at</label>
+<slot name="created_at"><time></time></slot>
+</li>
+<li class="authors" data-authors="0">
+<label id="NBID:metadata:authors">author<span class="plural">s</span></label>
+<ol class="author">
+</ol>
+</li>
+</ol>
 <details class="metadata unknown edit-only">
 <summary>metadata</summary>
-<dl class="metadata unknown">
-</dl>
+<ul class="metadata unknown">
+</ul>
 </details>
-<details class="summary" open="">
-<summary>summary</summary>
-<dl>
-<dt>statistics</dt>
-<dd class="statistics flex row">
+<details class="headings" open="">
+<summary>headings</summary>
+<p class="flex row">
 <span><slot name="cells_length">0</slot></span>
-<label>cells</label>
-<menu role="toolbar">
-<li class="execution">
 <select name="execution" readonly="" tabindex="-1">
 <option value="executed">executed</option>
 <option value="unexecuted">unexecuted</option>
 <option value="partially executed">partial executed</option>
 </select>
-</li>
-<li class="success">
 <select name="success" readonly="" tabindex="-1">
 <option value="successfully">successfully</option>
 <option value="unsuccessfully">unsuccessfully</option>
 </select>
-</li>
-<li class="order">
 <select name="order" readonly="" tabindex="-1">
 <option value="in uniform order">in uniform order</option>
 <option value="in order">in order</option>
 <option value="out of order">out of order</option>
 </select>
-</li>
-</menu>
-</dd>
-<dt>headings</dt>
-<dd><nav class="cells headings">
+</p>
+<nav class="cells headings">
 <menu role="toolbar">
 <li>
 <label>
 <input name="show_cells" type="checkbox"/>
-                                show cells
-                            </label>
+                            show cells
+                        </label>
 </li>
 <li>
 <label>
 <input checked="" name="show_headings" type="checkbox"/>
-                                show headings
-                            </label>
+                            show headings
+                        </label>
 </li>
 </menu>
-<dl class="nav headings">
-</dl>
-</nav></dd></dl></details>
+<ol class="nav headings">
+</ol>
+</nav></details>
 
-<dt>layout</dt>
-<dd class="layout">
+
+<details class="layout">
+<summary>layout</summary>
 <menu role="toolbar">
 <dl class="layout flex row" role="group">
 <dt>mode</dt>
@@ -557,9 +546,7 @@ notebook templates build from aria and pour accessibility principles.
 </dd>
 </dd></dl>
 </menu>
-</dd>
-
-
+</details>
 <script class="action">
             //- html element actions that inputs can perform
         </script>
@@ -569,6 +556,7 @@ notebook templates build from aria and pour accessibility principles.
 </li>
 </menu>
 </form>
+<hr/>
 <script class="metadata" type="application/json">{}</script>
 <!-- paginate and layout interface goes here -->
 <ol aria-multiselectable="false" aria-setsize="0" class="cells">
@@ -677,146 +665,175 @@ notebook templates build from aria and pour accessibility principles.
 </li>
 </template>
 </main>
+<footer id="FOOTER">
+<menu role="toolbar">
+<li class="settings">
+<button aria-controls="settings:dialog">settings</button>
+</li>
+<li class="history">
+<button aria-controls="history:dialog">history</button>
+</li>
+<li class="removed">
+<button aria-controls="removed:dialog">removed</button>
+</li>
+</menu>
+<section class="activity">
+<details class="activity">
+<summary>Activity Log</summary>
+</details>
+<table class="activity">
+<thead>
+<tr>
+<th>time</th>
+<th>level</th>
+<th>message</th>
+<th>actions</th>
+<th>expires</th>
+</tr>
+</thead>
+</table>
+</section>
+<a href="#TOP" id="BOTTOM">skip to top</a>
+</footer>
 <dialog id="settings:dialog">
-<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb no-source no-metadata" data-highlight-theme="" data-readonly="true" id="settings:region">
-<form class="nb" id="settings" method="dialog" onsubmit="Cell.from(event).runCell();">
+<section aria-describedby="description" aria-labelledby="settings:title" aria-modal="false" class="nb no-source no-metadata" data-highlight-theme="" data-readonly="true" id="settings:region">
+<form class="nb metadata" id="settings" method="dialog" onsubmit="Cell.from(event).runCell();">
 <hgroup>
-<h1 id="title"><slot name="title">untitled</slot></h1>
-<p id="description"><slot name="description"></slot></p>
+<h1 id="settings:title">
+<slot name="title"></slot>
+<span class="default">untitled notebook</span>
+</h1>
+<p id="settings:desc">
+<slot name="description"></slot>
+</p>
 </hgroup>
-<!-- edit-only run-only -->
-<dl class="metadata known edit-only">
-<dt class="title">
-<label for="nb:metadata:title">title</label>
-</dt>
-<dd class="title">
-<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
-</dd>
-<dt class="description">
-<label for="nb:metadata:description">description</label>
-</dt>
-<dd class="description">
-<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
-</dd>
-</dl>
-<dl class="metadata known">
-<dt class="updated_at empty">updated at</dt>
-<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
-<dt class="created_at empty">created at</dt>
-<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
-<dt class="author" data-authors="0">
-<label id="nb:metadata:authors">author<span class="plural">s</span></label>
-</dt>
-</dl>
+<ol class="metadata known edit-only">
+<li class="title">
+<label for="settings:metadata:title">title</label>
+<input id="settings:metadata:title" name="settings:metadata:title" placeholder="untitled" type="text" value=""/>
+</li>
+<li class="description">
+<label for="settingsmetadata:description">description</label>
+<textarea id="settingsmetadata:description" name="settingsmetadata:description" placeholder=""></textarea>
+</li>
+</ol>
+<ol class="metadata known">
+<li class="updated_at empty">
+<label>updated at</label>
+<slot name="updated_at"><time></time></slot>
+</li>
+<li class="created_at empty">
+<label>created at</label>
+<slot name="created_at"><time></time></slot>
+</li>
+<li class="authors" data-authors="0">
+<label id="settings:metadata:authors">author<span class="plural">s</span></label>
+<ol class="author">
+</ol>
+</li>
+</ol>
 <details class="metadata unknown edit-only">
 <summary>metadata</summary>
-<dl class="metadata unknown">
-<dt class="kernelspec">
-<label for="nb:metadata:kernelspec">kernelspec</label>
-</dt>
-<dd class="kernelspec">
-<input id="nb:metadata:kernelspec" name="kernelspec" readonly="" tabindex="-1" type="text" value="{'display_name': 'Python 3 (ipykernel)', 'language': 'python', 'name': 'python3'}"/>
-</dd>
-<dt class="language_info">
-<label for="nb:metadata:language_info">language_info</label>
-</dt>
-<dd class="language_info">
-<input id="nb:metadata:language_info" name="language_info" readonly="" tabindex="-1" type="text" value="{'codemirror_mode': {'name': 'ipython', 'version': 3}, 'file_extension': '.py', 'mimetype': 'text/x-python', 'name': 'python', 'nbconvert_exporter': 'python', 'pygments_lexer': 'ipython3', 'version': '3.13.5'}"/>
-</dd>
-</dl>
+<ul class="metadata unknown">
+<li>
+<label for="settings:metadata:kernelspec">kernelspec</label>
+<input id="settings:metadata:kernelspec" name="kernelspec" readonly="" tabindex="-1" type="text" value="{'display_name': 'Python 3 (ipykernel)', 'language': 'python', 'name': 'python3'}"/>
+</li>
+<li>
+<label for="settings:metadata:language_info">language_info</label>
+<input id="settings:metadata:language_info" name="language_info" readonly="" tabindex="-1" type="text" value="{'codemirror_mode': {'name': 'ipython', 'version': 3}, 'file_extension': '.py', 'mimetype': 'text/x-python', 'name': 'python', 'nbconvert_exporter': 'python', 'pygments_lexer': 'ipython3', 'version': '3.13.5'}"/>
+</li>
+</ul>
 </details>
-<details class="summary" open="">
-<summary>summary</summary>
-<dl>
-<dt>statistics</dt>
-<dd class="statistics flex row">
+<details class="headings" open="">
+<summary>headings</summary>
+<p class="flex row">
 <span><slot name="cells_length">8</slot></span>
-<label>cells</label>
-<menu role="toolbar">
-<li class="execution">
 <select name="execution" readonly="" tabindex="-1">
 <option value="executed">executed</option>
 <option value="unexecuted">unexecuted</option>
 <option value="partially executed">partial executed</option>
 </select>
-</li>
-<li class="success">
 <select name="success" readonly="" tabindex="-1">
 <option value="successfully">successfully</option>
 <option value="unsuccessfully">unsuccessfully</option>
 </select>
-</li>
-<li class="order">
 <select name="order" readonly="" tabindex="-1">
 <option value="in uniform order">in uniform order</option>
 <option value="in order">in order</option>
 <option value="out of order">out of order</option>
 </select>
-</li>
-</menu>
-</dd>
-<dt>headings</dt>
-<dd><nav class="cells headings">
+</p>
+<nav class="cells headings">
 <menu role="toolbar">
 <li>
 <label>
 <input name="show_cells" type="checkbox"/>
-                                show cells
-                            </label>
+                            show cells
+                        </label>
 </li>
 <li>
 <label>
 <input checked="" name="show_headings" type="checkbox"/>
-                                show headings
-                            </label>
+                            show headings
+                        </label>
 </li>
 </menu>
-<dl class="nav headings">
-<dt data-cell="1">
+<ol class="nav headings">
+<li aria-controls="" class="cell" data-cell="1">
 <a href="#cell:1">
-                                cell 1        
-                            </a>
-</dt>
-<dt data-cell="2">
+<span>cell </span>
+<slot name="index">1</slot>
+</a>
+<ol><li data-level="1"><a href="#settings">settings</a></li></ol></li>
+<li aria-controls="" class="cell" data-cell="2">
 <a href="#cell:2">
-                                cell 2        
-                            </a>
-</dt>
-<dt data-cell="3">
+<span>cell </span>
+<slot name="index">2</slot>
+</a>
+<ol><li data-level="2"><a href="#accesssibility-settings">accesssibility settings</a></li></ol></li>
+<li aria-controls="" class="cell" data-cell="3">
 <a href="#cell:3">
-                                cell 3        
-                            </a>
-</dt>
-<dt data-cell="4">
+<span>cell </span>
+<slot name="index">3</slot>
+</a>
+<ol><li data-level="2"><a href="#browser">browser</a></li></ol></li>
+<li aria-controls="" class="cell" data-cell="4">
 <a href="#cell:4">
-                                cell 4        
-                            </a>
-</dt>
-<dt data-cell="5">
+<span>cell </span>
+<slot name="index">4</slot>
+</a>
+</li>
+<li aria-controls="" class="cell" data-cell="5">
 <a href="#cell:5">
-                                cell 5        
-                            </a>
-</dt>
-<dt data-cell="6">
+<span>cell </span>
+<slot name="index">5</slot>
+</a>
+<ol><li data-level="2"><a href="#markdown">markdown</a></li></ol></li>
+<li aria-controls="" class="cell" data-cell="6">
 <a href="#cell:6">
-                                cell 6        
-                            </a>
-</dt>
-<dt data-cell="7">
+<span>cell </span>
+<slot name="index">6</slot>
+</a>
+<ol><li data-level="2"><a href="#mermaid">mermaid</a></li></ol></li>
+<li aria-controls="" class="cell" data-cell="7">
 <a href="#cell:7">
-                                cell 7        
-                            </a>
-</dt>
-<dt data-cell="8">
+<span>cell </span>
+<slot name="index">7</slot>
+</a>
+</li>
+<li aria-controls="" class="cell" data-cell="8">
 <a href="#cell:8">
-                                cell 8        
-                            </a>
-</dt>
-</dl>
-</nav></dd></dl></details>
+<span>cell </span>
+<slot name="index">8</slot>
+</a>
+</li>
+</ol>
+</nav></details>
 
-<dt>layout</dt>
-<dd class="layout">
+
+<details class="layout">
+<summary>layout</summary>
 <menu role="toolbar">
 <dl class="layout flex row" role="group">
 <dt>mode</dt>
@@ -856,9 +873,7 @@ notebook templates build from aria and pour accessibility principles.
 </dd>
 </dd></dl>
 </menu>
-</dd>
-
-
+</details>
 <script class="action">
             //- html element actions that inputs can perform
         </script>
@@ -868,6 +883,7 @@ notebook templates build from aria and pour accessibility principles.
 </li>
 </menu>
 </form>
+<hr/>
 <script class="metadata" type="application/json">{"kernelspec": {"display_name": "Python 3 (ipykernel)", "language": "python", "name": "python3"}, "language_info": {"codemirror_mode": {"name": "ipython", "version": 3}, "file_extension": ".py", "mimetype": "text/x-python", "name": "python", "nbconvert_exporter": "python", "pygments_lexer": "ipython3", "version": "3.13.5"}}</script>
 <!-- paginate and layout interface goes here -->
 <ol aria-multiselectable="false" aria-setsize="8" class="cells">
@@ -2672,93 +2688,88 @@ function toggleInert(object, inert=true, root=true) {
 </section>
 </dialog>
 <dialog id="removed:dialog">
-<section aria-describedby="description" aria-labelledby="title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="removed:region">
-<form class="nb" id="removed" method="dialog" onsubmit="Cell.from(event).runCell();">
+<section aria-describedby="description" aria-labelledby="removed:title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="removed:region">
+<form class="nb metadata" id="removed" method="dialog" onsubmit="Cell.from(event).runCell();">
 <hgroup>
-<h1 id="title"><slot name="title">untitled</slot></h1>
-<p id="description"><slot name="description"></slot></p>
+<h1 id="removed:title">
+<slot name="title"></slot>
+<span class="default">untitled notebook</span>
+</h1>
+<p id="removed:desc">
+<slot name="description"></slot>
+</p>
 </hgroup>
-<!-- edit-only run-only -->
-<dl class="metadata known edit-only">
-<dt class="title">
-<label for="nb:metadata:title">title</label>
-</dt>
-<dd class="title">
-<input id="nb:metadata:title" name="nb:metadata:title" placeholder="untitled" type="text" value=""/>
-</dd>
-<dt class="description">
-<label for="nb:metadata:description">description</label>
-</dt>
-<dd class="description">
-<textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""></textarea>
-</dd>
-</dl>
-<dl class="metadata known">
-<dt class="updated_at empty">updated at</dt>
-<dd class="updated_at"><slot name="updated_at"><time></time></slot></dd>
-<dt class="created_at empty">created at</dt>
-<dd class="created_at"><slot name="created_at"><time></time></slot></dd>
-<dt class="author" data-authors="0">
-<label id="nb:metadata:authors">author<span class="plural">s</span></label>
-</dt>
-</dl>
+<ol class="metadata known edit-only">
+<li class="title">
+<label for="removed:metadata:title">title</label>
+<input id="removed:metadata:title" name="removed:metadata:title" placeholder="untitled" type="text" value=""/>
+</li>
+<li class="description">
+<label for="removedmetadata:description">description</label>
+<textarea id="removedmetadata:description" name="removedmetadata:description" placeholder=""></textarea>
+</li>
+</ol>
+<ol class="metadata known">
+<li class="updated_at empty">
+<label>updated at</label>
+<slot name="updated_at"><time></time></slot>
+</li>
+<li class="created_at empty">
+<label>created at</label>
+<slot name="created_at"><time></time></slot>
+</li>
+<li class="authors" data-authors="0">
+<label id="removed:metadata:authors">author<span class="plural">s</span></label>
+<ol class="author">
+</ol>
+</li>
+</ol>
 <details class="metadata unknown edit-only">
 <summary>metadata</summary>
-<dl class="metadata unknown">
-</dl>
+<ul class="metadata unknown">
+</ul>
 </details>
-<details class="summary" open="">
-<summary>summary</summary>
-<dl>
-<dt>statistics</dt>
-<dd class="statistics flex row">
+<details class="headings" open="">
+<summary>headings</summary>
+<p class="flex row">
 <span><slot name="cells_length">0</slot></span>
-<label>cells</label>
-<menu role="toolbar">
-<li class="execution">
 <select name="execution" readonly="" tabindex="-1">
 <option value="executed">executed</option>
 <option value="unexecuted">unexecuted</option>
 <option value="partially executed">partial executed</option>
 </select>
-</li>
-<li class="success">
 <select name="success" readonly="" tabindex="-1">
 <option value="successfully">successfully</option>
 <option value="unsuccessfully">unsuccessfully</option>
 </select>
-</li>
-<li class="order">
 <select name="order" readonly="" tabindex="-1">
 <option value="in uniform order">in uniform order</option>
 <option value="in order">in order</option>
 <option value="out of order">out of order</option>
 </select>
-</li>
-</menu>
-</dd>
-<dt>headings</dt>
-<dd><nav class="cells headings">
+</p>
+<nav class="cells headings">
 <menu role="toolbar">
 <li>
 <label>
 <input name="show_cells" type="checkbox"/>
-                                show cells
-                            </label>
+                            show cells
+                        </label>
 </li>
 <li>
 <label>
 <input checked="" name="show_headings" type="checkbox"/>
-                                show headings
-                            </label>
+                            show headings
+                        </label>
 </li>
 </menu>
-<dl class="nav headings">
-</dl>
-</nav></dd></dl></details>
+<ol class="nav headings">
+</ol>
+</nav></details>
 
-<dt>layout</dt>
-<dd class="layout">
+
+<details class="layout">
+<summary>layout</summary>
 <menu role="toolbar">
 <dl class="layout flex row" role="group">
 <dt>mode</dt>
@@ -2798,9 +2809,7 @@ function toggleInert(object, inert=true, root=true) {
 </dd>
 </dd></dl>
 </menu>
-</dd>
-
-
+</details>
 <script class="action">
             //- html element actions that inputs can perform
         </script>
@@ -2810,31 +2819,152 @@ function toggleInert(object, inert=true, root=true) {
 </li>
 </menu>
 </form>
+<hr/>
 <script class="metadata" type="application/json">{}</script>
 <!-- paginate and layout interface goes here -->
 <ol aria-multiselectable="false" aria-setsize="0" class="cells">
 </ol>
 </section>
 </dialog>
-<footer>
-<section class="activity">
-<details class="activity">
-<summary>Activity Log</summary>
+<dialog id="history:dialog">
+<section aria-describedby="description" aria-labelledby="history:title" aria-modal="false" class="nb" data-highlight-theme="" data-readonly="true" id="history:region">
+<form class="nb metadata" id="history" method="dialog" onsubmit="Cell.from(event).runCell();">
+<hgroup>
+<h1 id="history:title">
+<slot name="title"></slot>
+<span class="default">untitled notebook</span>
+</h1>
+<p id="history:desc">
+<slot name="description"></slot>
+</p>
+</hgroup>
+<ol class="metadata known edit-only">
+<li class="title">
+<label for="history:metadata:title">title</label>
+<input id="history:metadata:title" name="history:metadata:title" placeholder="untitled" type="text" value=""/>
+</li>
+<li class="description">
+<label for="historymetadata:description">description</label>
+<textarea id="historymetadata:description" name="historymetadata:description" placeholder=""></textarea>
+</li>
+</ol>
+<ol class="metadata known">
+<li class="updated_at empty">
+<label>updated at</label>
+<slot name="updated_at"><time></time></slot>
+</li>
+<li class="created_at empty">
+<label>created at</label>
+<slot name="created_at"><time></time></slot>
+</li>
+<li class="authors" data-authors="0">
+<label id="history:metadata:authors">author<span class="plural">s</span></label>
+<ol class="author">
+</ol>
+</li>
+</ol>
+<details class="metadata unknown edit-only">
+<summary>metadata</summary>
+<ul class="metadata unknown">
+</ul>
 </details>
-<table class="activity">
-<thead>
-<tr>
-<th>time</th>
-<th>level</th>
-<th>message</th>
-<th>actions</th>
-<th>expires</th>
-</tr>
-</thead>
-</table>
+<details class="headings" open="">
+<summary>headings</summary>
+<p class="flex row">
+<span><slot name="cells_length">0</slot></span>
+<select name="execution" readonly="" tabindex="-1">
+<option value="executed">executed</option>
+<option value="unexecuted">unexecuted</option>
+<option value="partially executed">partial executed</option>
+</select>
+<select name="success" readonly="" tabindex="-1">
+<option value="successfully">successfully</option>
+<option value="unsuccessfully">unsuccessfully</option>
+</select>
+<select name="order" readonly="" tabindex="-1">
+<option value="in uniform order">in uniform order</option>
+<option value="in order">in order</option>
+<option value="out of order">out of order</option>
+</select>
+</p>
+<nav class="cells headings">
+<menu role="toolbar">
+<li>
+<label>
+<input name="show_cells" type="checkbox"/>
+                            show cells
+                        </label>
+</li>
+<li>
+<label>
+<input checked="" name="show_headings" type="checkbox"/>
+                            show headings
+                        </label>
+</li>
+</menu>
+<ol class="nav headings">
+</ol>
+</nav></details>
+
+
+<details class="layout">
+<summary>layout</summary>
+<menu role="toolbar">
+<dl class="layout flex row" role="group">
+<dt>mode</dt>
+<dd>
+<label>
+<span class="label">mode</span>
+<select aria-controls="history:region" name="mode" onchange="toggleClass(event);">
+<option selected="" value="read-mode">read mode</option>
+<option value="run-mode">run mode</option>
+<option value="edit-mode">edit mode</option>
+<option value="select-mode">select mode</option>
+</select>
+</label>
+<dt class="nv">horizontal layout</dt>
+<dd>
+<select name="horizontal">
+<option value="">compact</option>
+<option value="wide">wide</option>
+</select>
+</dd>
+<dt>columns</dt>
+<dd>
+<input name="columns" type="number" value="1"/>
+</dd>
+<dt>reverse</dt>
+<dd><input name="reverse" type="checkbox"/></dd>
+<dt>orientation</dt>
+<dd>
+<select aria-controls="history:region" name="orientation" onchange="toggleClass(event)">
+<option value="">input above output</option>
+<option value="out-in">input below output</option>
+<option value="ltr">input left of output</option>
+<option value="rtl">input right of output</option>
+<option value="no-outputs">input only</option>
+<option value="no-source">output only</option>
+</select>
+</dd>
+</dd></dl>
+</menu>
+</details>
+<script class="action">
+            //- html element actions that inputs can perform
+        </script>
+<menu class="" role="toolbar">
+<li class="run run-only">
+<button type="submit">run selected cells</button>
+</li>
+</menu>
+</form>
+<hr/>
+<script class="metadata" type="application/json">{}</script>
+<!-- paginate and layout interface goes here -->
+<ol aria-multiselectable="false" aria-setsize="0" class="cells">
+</ol>
 </section>
-<a href="#TOP" id="BOTTOM">skip to top</a>
-</footer>
+</dialog>
 </body>
 </html>
 <script>
@@ -2893,32 +3023,48 @@ function toggleInert(object, inert=true, root=true) {
             return this
         }
         updateNav() {
-            const dl = newElement("dl")
+            const ol = newElement("ol")
             this.region.querySelectorAll("ol.cells > li.cell > section.cell").forEach(
                 (cell, i) => {
-                    dl.appendChild(newElement("dt", {class: "cell"}, (i + 1).toString()))
-                    cell.querySelectorAll("details.outputs :not(dd[data-mime='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)").forEach(
-                        (heading) => {
-                            if (!heading.getAttribute("id")) {
-                                heading.setAttribute("id", slugify(heading.textContent))
+                    console.log(i)
+                    const item = newElement("li", {class: "cell"}, newElement(
+                        "a", {
+                            href: "#" + cell.closest("li").getAttribute("id"),
+                        }, newElement("span", {}, "cell"), document.createTextNode((i + 1).toString())
+                    ));
+                    const headings = cell.querySelectorAll("details.outputs :not(dd[data-mime='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)");
+                    ol.appendChild(item);
+                    if (headings.length) {
+                        const list = newElement("ol")
+                        item.append(list)
+                        headings.forEach(
+                            (heading) => {
+                                if (!heading.getAttribute("id")) {
+                                    heading.setAttribute("id", slugify(heading.textContent))
+                                }
+                                list.appendChild(newElement("li", {class: "h"}, newElement(
+                                    "a", {
+                                        href: `#${heading.getAttribute("id")}`
+                                    }, heading.textContent 
+                                )))        
                             }
-                            dl.appendChild(newElement("dd", {class: "h"}, newElement(
-                                "a", {
-                                    href: `#${heading.getAttribute("id")}`
-                                }, heading.textContent 
-                            )))        
-                        }
-                    )
+                        )
+                    }
+                    
                     
                 }
             )
-            this.region.querySelector("dl.nav.headings").replaceChildren(...dl.children)
+            this.region.querySelector("ol.nav.headings").replaceChildren(...ol.children)
         }
         addCells(...cells) {
             const cellsList = this.region.querySelector("ol.cells");
-            cells.map((cellData, i) => Cell.fromData(cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length})).forEach(cell => {
-                cellsList.appendChild(cell.region.parentElement);
-            });
+            cells.map(
+                (cellData, i) => Cell.fromData(
+                    cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length}
+                )).forEach(cell => {
+                    cellsList.appendChild(cell.region.parentElement);
+                }
+            );
 
             const diagrams = this.region.querySelectorAll("code.language-mermaid");
             document.forms["text/mermaid"]
@@ -2931,7 +3077,7 @@ function toggleInert(object, inert=true, root=true) {
             nb.region.querySelector("[name=cells_length]").textContent = object.cells.length
             nb.region.querySelector("ol.cells").setAttribute("aria-setsize", object.cells.length)
             nb.addCells(...object.cells);
-            nb.updateNav()
+            nb.updateNav(object)
             return nb
         }
         static newTemplate() {
@@ -3031,18 +3177,12 @@ function toggleInert(object, inert=true, root=true) {
         outputsList() {
             return this.region.querySelector("details.outputs ol.outputs")
         }
-        appendOutputs(...outputs) {
+        appendOutputs(cell, ...outputs) {
             const outputsSection = this.outputsList();
             outputs.forEach(outputData => {
-                outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(outputData).region));
+                outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(cell, outputData).region));
             });
             this.region.dataset.outputs = outputs.length;
-            const graphs = outputsSection.querySelectorAll(".language-mermaid")
-            console.log(graphs)
-            if (graphs.length) {
-                console.log(graphs)
-                
-            }
         }
         updateCell(data, options = {}) {
             // this.updateMetadata(data);
@@ -3071,7 +3211,7 @@ function toggleInert(object, inert=true, root=true) {
             this.form.input_type.value = inputType;
             this.updateSource(data);
             // this.updateOutputs(data);
-            this.appendOutputs(...data.outputs || []);
+            this.appendOutputs(data, ...data.outputs || []);
             return this
         }
         updateSource(data) {
@@ -3118,7 +3258,19 @@ function toggleInert(object, inert=true, root=true) {
             .replaceAll("'", "&#039;");
     };
 
-
+    function updateAttachments(attachments, region) {
+        region.querySelectorAll("img[src^='attachment']").forEach(
+            img => {
+                const id = img.getAttribute("src").replace("attachment:", "");
+                const mimes = attachments[id];
+                for (const [key, value] of Object.entries(mimes)) {
+                    const base64 = ";base64"
+                    img.setAttribute("src", `data:${key}${base64},${value}`);
+                    break
+                }
+            }
+        )
+    }
     class Output {
         constructor(object) {
             this.region = object;
@@ -3130,9 +3282,9 @@ function toggleInert(object, inert=true, root=true) {
             }
             return new Output(object.target || object);
         }
-        static fromData(data) {
+        static fromData(cell, data) {
             if (["execute_result", "display_data"].includes(data.output_type)) {
-                return Output.fromDisplayData(data);
+                return Output.fromDisplayData(cell, data);
             } else if (data.output_type == "stream") {
                 return new Output(
                     newElement("dl",
@@ -3170,7 +3322,7 @@ function toggleInert(object, inert=true, root=true) {
                 //silentyly fail other output types
             }
         }
-        static fromDisplayData(data) {
+        static fromDisplayData(cell, data) {
             debugger
             const mimeBundle = data.data;
             const metadata = data.metadata;
@@ -3235,7 +3387,7 @@ function toggleInert(object, inert=true, root=true) {
                             ...newElementsFromString(html),
                         );
                         dt.insertAdjacentElement("afterend", dd);
-                        Output.postUpdate(dd)
+                        Output.postUpdate(cell, dd)
                     })
                 }
             }
@@ -3304,11 +3456,10 @@ function toggleInert(object, inert=true, root=true) {
             return new Output(dl)
         }
 
-        static postUpdate(region) {
+        static postUpdate(cell, region) {
             const graphs = region.querySelectorAll(".language-mermaid")
-            if (graphs.length) {
-                document.forms["text/mermaid"].run({nodes: graphs})
-            }
+            graphs.length && document.forms["text/mermaid"].run({nodes: graphs})
+            cell.attachments && updateAttachments(cell.attachments, region)
             return this
         }
 
@@ -3333,7 +3484,7 @@ function toggleInert(object, inert=true, root=true) {
 
             return this.getRunner()(cell, this).then(
                 (outputs) => {
-                    cell.appendOutputs(...outputs);
+                    cell.appendOutputs(cellData, ...outputs);
                 }
             );
         }
@@ -3522,7 +3673,7 @@ section.cell:focus-visible,
 section.cell:focus-within {
     outline-style: dashed;
 }
-section.nb:focus-within {
+section.nb:focus-within, section.nb form.nb.metadata:focus-within {
     outline-style: dotted;
 }
 </style>
@@ -3569,13 +3720,13 @@ section.nb:focus-within {
     input[name=current]:not(:focus):not(:checked) {
         opacity: 0;
     }
-    dt.empty {
+    li.empty {
         display: none;
         & ~ :not(dt) {
             display: none;
         }
     }
-    dt[data-authors="0"] {
+    li[data-authors="0"] {
         display: none;
         & ~ :not(dt) {
             display: none;

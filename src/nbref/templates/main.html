@@ -90,159 +90,151 @@
 {% set authors = nb.metadata.authors | default([]) %}
 {% set title = nb.metadata.title | default("") %}
 {% set nb_classes = config.nb_classes | default("") %}
-<section class="nb {{nb_classes}}" aria-labelledby="title" aria-describedby="description" aria-modal="false" data-readonly="true" data-highlight-theme="" id="{{root_id}}:region">
-    <form class="nb" method="dialog" id="{{root_id}}" onsubmit="Cell.from(event).runCell();">
+<section id="{{root_id}}:region" class="nb {{nb_classes}}" aria-labelledby="{{root_id}}:title" aria-describedby="description" aria-modal="false" data-readonly="true" data-highlight-theme="">
+    <form id="{{root_id}}" class="nb metadata" method="dialog" onsubmit="Cell.from(event).runCell();">
         <hgroup>
-            <h1 id="title"><slot name="title">{{nb.metadata.title | default("untitled")}}</slot></h1>
-            <p id="description"><slot name="description">{{nb.metadata.description | default("")}}</slot></p>
+            <h1 id="{{root_id}}:title">
+                <slot name="title"></slot>
+                <span class="default">untitled notebook</span>
+            </h1>
+            <p id="{{root_id}}:desc">
+                <slot name="description">{{nb.metadata.description | default("")}}</slot>
+            </p>
         </hgroup>
-        <!-- edit-only run-only -->
-        <dl class="metadata known edit-only">
-            <dt class="title">
-                <label for="nb:metadata:title">title</label>
-            </dt>
-            <dd class="title">
-                <input type="text" id="nb:metadata:title" name="nb:metadata:title" value="{{title}}" placeholder="untitled"{{readonly_attr}}>
-            </dd>
-            <dt class="description">
-                <label for="nb:metadata:description">description</label>  
-            </dt>
-            <dd class="description">
-                <textarea id="nb:metadata:description" name="nb:metadata:description" placeholder=""{{readonly_attr}}>{{nb.metadata.description | default("")}}</textarea>
-            </dd>
-        </dl>
-        <dl class="metadata known">
+        <ol class="metadata known edit-only">
+            <li class="title">
+                <label for="{{root_id}}:metadata:title">title</label>
+                <input type="text" id="{{root_id}}:metadata:title" name="{{root_id}}:metadata:title" value="{{title}}" placeholder="untitled"{{readonly_attr}}>
+            </li>
+            <li class="description">
+                <label for="{{root_id}}metadata:description">description</label>  
+                <textarea id="{{root_id}}metadata:description" name="{{root_id}}metadata:description" placeholder=""{{readonly_attr}}>{{nb.metadata.description | default("")}}</textarea>
+            </li>
+        </ol>
+        <ol class="metadata known">
             {% set updated_at = nb.metadata.updated_at | default("") %}
             {% set created_at = nb.metadata.created_at | default("") %}
-            <dt class="updated_at{{is_empty(updated_at)}}">updated at</dt>
-            <dd class="updated_at"><slot name="updated_at"><time>{{updated_at}}</time></slot></dd>
-            <dt class="created_at{{is_empty(updated_at)}}">created at</dt>
-            <dd class="created_at"><slot name="created_at"><time>{{created_at}}</time></slot></dd>
-            <dt class="author" data-authors="{{authors | length}}">
-                <label id="nb:metadata:authors">author<span class="plural">s</span></label>  
-            </dt>
-            {% for author in authors %}
-            <dd class="author">
-                <input type="text" aria-labelledby="nb:metadata:authors" name="authors" value="{{author.name | default("")}}" placeholder="author name"{{readonly_attr}}> 
-            </dd>
-            {% endfor %}
-        </dl>
+            <li class="updated_at{{is_empty(updated_at)}}">
+                <label>updated at</label>
+                <slot name="updated_at"><time>{{updated_at}}</time></slot>
+            </li>
+            <li class="created_at{{is_empty(created_at)}}">
+                <label>created at</label>
+                <slot name="created_at"><time>{{created_at}}</time></slot>
+            </li>
+            <li class="authors" data-authors="{{authors | length}}">
+                <label id="{{root_id}}:metadata:authors">author<span class="plural">s</span></label>
+                <ol class="author">
+                    {% for author in authors %}
+                    <li class="author">
+                        <input type="text" aria-labelledby="{{root_id}}:metadata:authors" name="authors" value="{{author.name | default("")}}" placeholder="author name"{{readonly_attr}}> 
+                    </li>
+                    {% endfor %}
+                </ol>
+            </li>
+        </ol>
         <details class="metadata unknown edit-only">
             <summary>metadata</summary>
-            <dl class="metadata unknown">
+            <ul class="metadata unknown">
                 {% for k, v in nb.metadata.items() %}
                     {% if k not in ["title", "description", "updated_at", "created_at", "authors", "id"] %}
-                    <dt class="{{k}}">
-                        <label for="nb:metadata:{{k}}">{{k}}</label>
-                    </dt>
-                    <dd class="{{k}}">
-                        <input type="text" id="nb:metadata:{{k}}" name="{{k}}" value="{{v | default("")}}" {{non_interactive}}>
-                    </dd>
+                    <li>
+                        <label for="{{root_id}}:metadata:{{k}}">{{k}}</label>
+                        <input type="text" id="{{root_id}}:metadata:{{k}}" name="{{k}}" value="{{v | default("")}}" {{non_interactive}}>
+                    </li>
                     {% endif %}
                 {% endfor %}
-            </dl>
+            </ul>
         </details>
-        <details class="summary" open>
-            <summary>summary</summary>
-            <dl>
-                <dt>statistics</dt>
-                <dd class="statistics flex row">
-                    <span><slot name="cells_length">{{nb.cells | length}}</slot></span>
-                    <label>cells</label>
-                    <menu role="toolbar">
-                        <li class="execution">
-                            <select name="execution"{{non_interactive}}>
-                                <option value="executed">executed</option>
-                                <option value="unexecuted">unexecuted</option>
-                                <option value="partially executed">partial executed</option>
-                            </select>
-                        </li>
-                        <li class="success">
-                            <select name="success"{{non_interactive}}>
-                                <option value="successfully">successfully</option>
-                                <option value="unsuccessfully">unsuccessfully</option>
-                            </select>
-                        </li>
-                        <li class="order">
-                            <select name="order"{{non_interactive}}>
-                                <option value="in uniform order">in uniform order</option>
-                                <option value="in order">in order</option>
-                                <option value="out of order">out of order</option>
-                            </select>
-                        </li>
-                    </menu>
-                </dd>
-                <dt>headings</dt>
-                <dd><nav class="cells headings">
-                    <menu role="toolbar">
-                        <li>
-                            <label>
-                                <input type="checkbox" name="show_cells">
-                                show cells
-                            </label>
-                        </li>
-                        <li>
-                            <label>
-                                <input type="checkbox" name="show_headings" checked>
-                                show headings
-                            </label>
-                        </li>
-                    </menu>
-                    <dl class="nav headings">
-                        {% for cell in nb.cells %}
-                        <dt data-cell="{{loop.index}}">
-                            <a href="#cell:{{loop.index}}">
-                                cell {{loop.index}}        
-                            </a>
-                        </dt>
-                        {% endfor %}
-                    </dl>
-                    </details>
-                </nav></dd>
-                <dt>layout</dt>
-                <dd class="layout">
-                    <menu role="toolbar">
-                        <dl role="group" class="layout flex row">
-                            <dt>mode</dt>
-                            <dd>
-                                <label>
-                                        <span class="label">mode</span>
-                                        <select name="mode" aria-controls="{{root_id}}:region" onchange="toggleClass(event);">
-                                            <option value="read-mode" selected>read mode</option>
-                                            <option value="run-mode">run mode</option>
-                                            <option value="edit-mode">edit mode</option>
-                                            <option value="select-mode">select mode</option>
-                                        </select>
-                                    </label
-                            </dd>
-                            <dt class="nv">horizontal layout</dt>
-                            <dd>
-                                <select name="horizontal">
-                                    <option value="">compact</option>
-                                    <option value="wide">wide</option>
+        <details class="headings" open>
+            <summary>headings</summary>
+            <p class="flex row">
+                <span><slot name="cells_length">{{nb.cells | length}}</slot></span>
+                <select name="execution"{{non_interactive}}>
+                    <option value="executed">executed</option>
+                    <option value="unexecuted">unexecuted</option>
+                    <option value="partially executed">partial executed</option>
+                </select>
+                <select name="success"{{non_interactive}}>
+                    <option value="successfully">successfully</option>
+                    <option value="unsuccessfully">unsuccessfully</option>
+                </select>
+                <select name="order"{{non_interactive}}>
+                    <option value="in uniform order">in uniform order</option>
+                    <option value="in order">in order</option>
+                    <option value="out of order">out of order</option>
+                </select>
+            </p>
+            <nav class="cells headings">
+                <menu role="toolbar">
+                    <li>
+                        <label>
+                            <input type="checkbox" name="show_cells">
+                            show cells
+                        </label>
+                    </li>
+                    <li>
+                        <label>
+                            <input type="checkbox" name="show_headings" checked>
+                            show headings
+                        </label>
+                    </li>
+                </menu>
+                <ol class="nav headings">
+                    {% for cell in nb.cells %}
+                    <li class="cell" data-cell="{{loop.index}}" aria-controls="">
+                        <a href="#cell:{{loop.index}}">
+                            <span>cell&nbsp;</span>
+                            <slot name="index">{{loop.index}}</slot>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ol>
+                </details>
+            </nav>
+        </details>
+        <details class="layout">
+            <summary>layout</summary>
+            <menu role="toolbar">
+                <dl role="group" class="layout flex row">
+                    <dt>mode</dt>
+                    <dd>
+                        <label>
+                                <span class="label">mode</span>
+                                <select name="mode" aria-controls="{{root_id}}:region" onchange="toggleClass(event);">
+                                    <option value="read-mode" selected>read mode</option>
+                                    <option value="run-mode">run mode</option>
+                                    <option value="edit-mode">edit mode</option>
+                                    <option value="select-mode">select mode</option>
                                 </select>
-                            </dd>
-                            <dt>columns</dt>
-                            <dd>
-                                <input name="columns" type="number" value="1">
-                            </dd>
-                            <dt>reverse</dt>
-                            <dd><input type="checkbox" name="reverse"></dd>
-                            <dt>orientation</dt>
-                            <dd>
-                                <select name="orientation" aria-controls="{{root_id}}:region" onchange="toggleClass(event)">
-                                    <option value="">input above output</option>
-                                    <option value="out-in">input below output</option>
-                                    <option value="ltr">input left of output</option>
-                                    <option value="rtl">input right of output</option>
-                                    <option value="no-outputs">input only</option>
-                                    <option value="no-source">output only</option>
-                                </select>
-                            </dd>
-                        </dl>
-                    </menu>
-                </dd>
-            </dl>
+                            </label
+                    </dd>
+                    <dt class="nv">horizontal layout</dt>
+                    <dd>
+                        <select name="horizontal">
+                            <option value="">compact</option>
+                            <option value="wide">wide</option>
+                        </select>
+                    </dd>
+                    <dt>columns</dt>
+                    <dd>
+                        <input name="columns" type="number" value="1">
+                    </dd>
+                    <dt>reverse</dt>
+                    <dd><input type="checkbox" name="reverse"></dd>
+                    <dt>orientation</dt>
+                    <dd>
+                        <select name="orientation" aria-controls="{{root_id}}:region" onchange="toggleClass(event)">
+                            <option value="">input above output</option>
+                            <option value="out-in">input below output</option>
+                            <option value="ltr">input left of output</option>
+                            <option value="rtl">input right of output</option>
+                            <option value="no-outputs">input only</option>
+                            <option value="no-source">output only</option>
+                        </select>
+                    </dd>
+                </dl>
+            </menu>
         </details>
         <script class="action">
             //- html element actions that inputs can perform
@@ -253,6 +245,7 @@
             </li>
         </menu>
     </form>
+    <hr>
     <script class="metadata" type="application/json">{{nb.metadata | dumps}}</script>
     <!-- paginate and layout interface goes here -->
     <ol class="cells" aria-setsize="{{nb.cells | length}}" aria-multiselectable="false">
@@ -503,8 +496,8 @@
     <head>
         {{ head(nb, config) }}
     </head>
-    <body class="">
-        <header>
+    <body id="BODY">
+        <header id="HEADER">
             <menu>
                 <li>
                     <a class="skip" accesskey="(" href="TOP" href="#MAIN">skip to main </a>    
@@ -514,7 +507,6 @@
                 </li>
                 
             </menu>
-
             <menu>
                 <li class="brand">
                     <a href="#"><img alt="nothing"></a>
@@ -552,7 +544,21 @@
                 </li>
             </template>
         </main>
-
+        <footer id="FOOTER">
+            <menu role="toolbar">
+                <li class="settings">
+                    <button aria-controls="settings:dialog">settings</button>
+                </li>
+                <li class="history">
+                    <button aria-controls="history:dialog">history</button>
+                </li>
+                <li class="removed">
+                    <button aria-controls="removed:dialog">removed</button>
+                </li>
+            </menu>
+            {{ activity_log()}}
+            <a id="BOTTOM" href="#TOP">skip to top</a>
+        </footer>
         <dialog id="settings:dialog">
             {{notebook(settings, {
                 "nb_classes": " no-source no-metadata"
@@ -561,10 +567,9 @@
         <dialog id="removed:dialog">
             {{notebook({"cells": [], "metadata": {}}, {}, "removed")}}
         </dialog>
-        <footer>
-            {{ activity_log()}}
-            <a id="BOTTOM" href="#TOP">skip to top</a>
-        </footer>
+        <dialog id="history:dialog">
+            {{notebook({"cells": [], "metadata": {}}, {}, "history")}}
+        </dialog>
     </body>
 </html>
 {% endmacro %}
@@ -633,32 +638,48 @@
             return this
         }
         updateNav() {
-            const dl = newElement("dl")
+            const ol = newElement("ol")
             this.region.querySelectorAll("ol.cells > li.cell > section.cell").forEach(
                 (cell, i) => {
-                    dl.appendChild(newElement("dt", {class: "cell"}, (i + 1).toString()))
-                    cell.querySelectorAll("details.outputs :not(dd[data-mime='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)").forEach(
-                        (heading) => {
-                            if (!heading.getAttribute("id")) {
-                                heading.setAttribute("id", slugify(heading.textContent))
+                    console.log(i)
+                    const item = newElement("li", {class: "cell"}, newElement(
+                        "a", {
+                            href: "#" + cell.closest("li").getAttribute("id"),
+                        }, newElement("span", {}, "cell"), document.createTextNode((i + 1).toString())
+                    ));
+                    const headings = cell.querySelectorAll("details.outputs :not(dd[data-mime='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)");
+                    ol.appendChild(item);
+                    if (headings.length) {
+                        const list = newElement("ol")
+                        item.append(list)
+                        headings.forEach(
+                            (heading) => {
+                                if (!heading.getAttribute("id")) {
+                                    heading.setAttribute("id", slugify(heading.textContent))
+                                }
+                                list.appendChild(newElement("li", {class: "h"}, newElement(
+                                    "a", {
+                                        href: `#${heading.getAttribute("id")}`
+                                    }, heading.textContent 
+                                )))        
                             }
-                            dl.appendChild(newElement("dd", {class: "h"}, newElement(
-                                "a", {
-                                    href: `#${heading.getAttribute("id")}`
-                                }, heading.textContent 
-                            )))        
-                        }
-                    )
+                        )
+                    }
+                    
                     
                 }
             )
-            this.region.querySelector("dl.nav.headings").replaceChildren(...dl.children)
+            this.region.querySelector("ol.nav.headings").replaceChildren(...ol.children)
         }
         addCells(...cells) {
             const cellsList = this.region.querySelector("ol.cells");
-            cells.map((cellData, i) => Cell.fromData(cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length})).forEach(cell => {
-                cellsList.appendChild(cell.region.parentElement);
-            });
+            cells.map(
+                (cellData, i) => Cell.fromData(
+                    cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length}
+                )).forEach(cell => {
+                    cellsList.appendChild(cell.region.parentElement);
+                }
+            );
 
             const diagrams = this.region.querySelectorAll("code.language-mermaid");
             document.forms["text/mermaid"]
@@ -671,7 +692,7 @@
             nb.region.querySelector("[name=cells_length]").textContent = object.cells.length
             nb.region.querySelector("ol.cells").setAttribute("aria-setsize", object.cells.length)
             nb.addCells(...object.cells);
-            nb.updateNav()
+            nb.updateNav(object)
             return nb
         }
         static newTemplate() {
@@ -771,18 +792,12 @@
         outputsList() {
             return this.region.querySelector("details.outputs ol.outputs")
         }
-        appendOutputs(...outputs) {
+        appendOutputs(cell, ...outputs) {
             const outputsSection = this.outputsList();
             outputs.forEach(outputData => {
-                outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(outputData).region));
+                outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(cell, outputData).region));
             });
             this.region.dataset.outputs = outputs.length;
-            const graphs = outputsSection.querySelectorAll(".language-mermaid")
-            console.log(graphs)
-            if (graphs.length) {
-                console.log(graphs)
-                
-            }
         }
         updateCell(data, options = {}) {
             // this.updateMetadata(data);
@@ -811,7 +826,7 @@
             this.form.input_type.value = inputType;
             this.updateSource(data);
             // this.updateOutputs(data);
-            this.appendOutputs(...data.outputs || []);
+            this.appendOutputs(data, ...data.outputs || []);
             return this
         }
         updateSource(data) {
@@ -858,7 +873,19 @@
             .replaceAll("'", "&#039;");
     };
 
-
+    function updateAttachments(attachments, region) {
+        region.querySelectorAll("img[src^='attachment']").forEach(
+            img => {
+                const id = img.getAttribute("src").replace("attachment:", "");
+                const mimes = attachments[id];
+                for (const [key, value] of Object.entries(mimes)) {
+                    const base64 = ";base64"
+                    img.setAttribute("src", `data:${key}${base64},${value}`);
+                    break
+                }
+            }
+        )
+    }
     class Output {
         constructor(object) {
             this.region = object;
@@ -870,9 +897,9 @@
             }
             return new Output(object.target || object);
         }
-        static fromData(data) {
+        static fromData(cell, data) {
             if (["execute_result", "display_data"].includes(data.output_type)) {
-                return Output.fromDisplayData(data);
+                return Output.fromDisplayData(cell, data);
             } else if (data.output_type == "stream") {
                 return new Output(
                     newElement("dl",
@@ -910,7 +937,7 @@
                 //silentyly fail other output types
             }
         }
-        static fromDisplayData(data) {
+        static fromDisplayData(cell, data) {
             debugger
             const mimeBundle = data.data;
             const metadata = data.metadata;
@@ -975,7 +1002,7 @@
                             ...newElementsFromString(html),
                         );
                         dt.insertAdjacentElement("afterend", dd);
-                        Output.postUpdate(dd)
+                        Output.postUpdate(cell, dd)
                     })
                 }
             }
@@ -1044,11 +1071,10 @@
             return new Output(dl)
         }
 
-        static postUpdate(region) {
+        static postUpdate(cell, region) {
             const graphs = region.querySelectorAll(".language-mermaid")
-            if (graphs.length) {
-                document.forms["text/mermaid"].run({nodes: graphs})
-            }
+            graphs.length && document.forms["text/mermaid"].run({nodes: graphs})
+            cell.attachments && updateAttachments(cell.attachments, region)
             return this
         }
 
@@ -1073,7 +1099,7 @@
 
             return this.getRunner()(cell, this).then(
                 (outputs) => {
-                    cell.appendOutputs(...outputs);
+                    cell.appendOutputs(cellData, ...outputs);
                 }
             );
         }
@@ -1262,7 +1288,7 @@ section.cell:focus-visible,
 section.cell:focus-within {
     outline-style: dashed;
 }
-section.nb:focus-within {
+section.nb:focus-within, section.nb form.nb.metadata:focus-within {
     outline-style: dotted;
 }
 </style>
@@ -1309,13 +1335,13 @@ section.nb:focus-within {
     input[name=current]:not(:focus):not(:checked) {
         opacity: 0;
     }
-    dt.empty {
+    li.empty {
         display: none;
         & ~ :not(dt) {
             display: none;
         }
     }
-    dt[data-authors="0"] {
+    li[data-authors="0"] {
         display: none;
         & ~ :not(dt) {
             display: none;
