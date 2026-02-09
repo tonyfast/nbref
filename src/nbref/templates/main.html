@@ -378,7 +378,7 @@
             <slot name="execution_count">{{execution_count}}</slot>
             <span class="suffix"></span>
         </summary>
-        <ol class="outputs" data-setsize="{{cell.outputs | default([]) | length}}">
+        <ol class="outputs" data-setsize="{{cell.outputs | default([]) | length}}" role="none">
             {% if cell.cell_type == "markdown" %}
                 {% set outputs = [{
                     "output_type": "display_data",
@@ -400,67 +400,66 @@
 {% macro notebook_cell_output(output, output_loop, cell, cell_loop, nb, config) %}
 {% set id %}{{cell.id}}:outputs:{{output_loop.index0}}{% endset %}
 {% if output.output_type == "stream" %}
-<dl id="{{id}}" class="output {{output.output_type}} {{output.name}}"></dl>
-    <dt class="stream">{{output.name}}</dt>
-    <dd class="text">{{output.text}}</dd>
-</dl>
+<div id="{{id}}" class="output {{output.output_type}} {{output.name}}" role="group">
+    <label class="stream">{{output.name}}</label>
+    <pre><code class="text">{{output.text}}</code></pre>
+</div>
 {% elif output.output_type == "error" %}
-<dl id="{{id}}" class="output {{output.output_type}} {{output.ename}}"></dl>
-    <dt class="error ename">{{output.ename}}</dt>
-    <dd class="error evalue">
+<div id="{{id}}" class="output {{output.output_type}} {{output.ename}}" role="group">
+    <label class="error ename">{{output.ename}}</label>
+    <pre><code class="error evalue">
         <pre>{{output.evalue}}</pre>
-    </dd>
+    </code></pre>
     {% for line in output.traceback %}
-    <dd class="traceback">
-        <pre>{{line}}</pre>
-    </dd>
+    <pre>{{line}}</pre>
     {% endfor %}
-</dl>
+</div>
 {% elif output.output_type == "execute_result" or output.output_type == "display_data" %}
-<dl id="{{id}}" class="output {{output.output_type}}">
+<ol id="{{id}}" class="output {{output.output_type}}" role="none">
     {% for mime, data in output.data.items() %}
     {% set alt = output.metadata | get(mime, {}) | get("alt", "Image") %}
-    <dt class="mime">{{mime}}</dt>
-    <dd id="{{cell.id}}:outputs:{{output_loop.index}}:{{mime}}" class="mime {{output.output_type}}" data-mime="{{mime}}">
-        {% if mime == "text/plain" %}
-            <pre>{{data | join("")}}</pre>
-        {% elif mime == "text/html" %}
-            {{data | join("") | safe}}
-        {% elif mime == "text/markdown" %}
-            {{data | join("") | markdown | safe}}
-        {% elif mime == "image/jpeg" %}
-            <img src="data:image/jpeg;base64,{{data | join("")}}" alt="{{alt}}">
-        {% elif mime == "image/svg+xml" %}
-            {{data | join("") | safe}}
-        {% elif mime == "image/bmp" %}
-            <img src="data:image/bmp;base64,{{data | join("")}}" alt="{{alt}}">
-        {% elif mime == "image/png" %}
-            <img src="data:image/png;base64,{{data | join("")}}" alt="{{alt}}">
-        {% elif mime == "application/javascript" %}
-            {# could be a module #}
-            <script type="{{mime}}">
-                {{data | join("")}}
-            </script>
-        {% elif mime == "vnd.jupyter.widget-view+json" %}
-            <script type="{{mime}}">
-                {{data | join("")}}
-            </script>
-        {% elif mime.startswith("application/json+ipynb") %}
-            {{ notebook(data, config) }}}
-        {% elif mime.startswith("application/json") %}
-            <script type="{{mime}}">{{data | tojson(indent=2)}}</script>
-        {% else %}
-            <pre>Unsupported MIME type: {{mime}}</pre>
-        {% endif %}
-        </dd>
+    <li class="mime" data-mime="{{mime}}">
+        <label class="mime">{{mime}}</label>
+        <div id="{{cell.id}}:outputs:{{output_loop.index}}:{{mime}}" class="mime {{output.output_type}}" >
+            {% if mime == "text/plain" %}
+                <pre>{{data | join("")}}</pre>
+            {% elif mime == "text/html" %}
+                {{data | join("") | safe}}
+            {% elif mime == "text/markdown" %}
+                {{data | join("") | markdown | safe}}
+            {% elif mime == "image/jpeg" %}
+                <img src="data:image/jpeg;base64,{{data | join("")}}" alt="{{alt}}">
+            {% elif mime == "image/svg+xml" %}
+                {{data | join("") | safe}}
+            {% elif mime == "image/bmp" %}
+                <img src="data:image/bmp;base64,{{data | join("")}}" alt="{{alt}}">
+            {% elif mime == "image/png" %}
+                <img src="data:image/png;base64,{{data | join("")}}" alt="{{alt}}">
+            {% elif mime == "application/javascript" %}
+                {# could be a module #}
+                <script type="{{mime}}">
+                    {{data | join("")}}
+                </script>
+            {% elif mime == "vnd.jupyter.widget-view+json" %}
+                <script type="{{mime}}">
+                    {{data | join("")}}
+                </script>
+            {% elif mime.startswith("application/json+ipynb") %}
+                {{ notebook(data, config) }}}
+            {% elif mime.startswith("application/json") %}
+                <script type="{{mime}}">{{data | tojson(indent=2)}}</script>
+            {% else %}
+                <pre>Unsupported MIME type: {{mime}}</pre>
+            {% endif %}
+        <li>
     {% endfor %}
-</dl>
+    </ol>
 {% else %}
-<dl id="{{id}}" class="output unknown">
+<ol id="{{id}}" class="output unknown" role="none">
     <script type="application/json">
         {{output | tojson(indent=2)}}
     </script>
-</dl>
+</ol>
 {% endif %}
 {% endmacro %}
 
@@ -1238,7 +1237,7 @@
             margin-right: 1em;
         }
     }
-    ol.cells, ol.outputs {
+    ol.cells, ol.outputs, ol.output {
         list-style: none;
         padding-left: unset;
     }
@@ -1248,7 +1247,7 @@
     a.h {
         margin-right: 1em;
     }
-    details.outputs dt.mime {
+    details.outputs label.mime {
         display: none;
     }
     nav.cells dl.nav {
@@ -1402,11 +1401,11 @@ section.nb:focus-within, section.nb form.nb.metadata:focus-within {
             }
         }
     }
-    dl.output {
-        & dd[data-mime="text/html"] ~ * {
+    ol.output {
+        & li[data-mime="text/html"] ~ * {
             display: none;
         }
-        & dd[data-mime="text/markdown"] ~ * {
+        & li[data-mime="text/markdown"] ~ * {
             display: none;
         }
     }
@@ -1422,5 +1421,8 @@ section.nb:focus-within, section.nb form.nb.metadata:focus-within {
     }
     section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count::before {
         content: "output";
+    }
+    ol.nav.headings li.cell > a {
+        display: none;
     }
 </style>
