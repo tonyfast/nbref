@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@axe-core/cli": "^4.11.1"
+  }
+}

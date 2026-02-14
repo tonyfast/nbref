@@ -24,19 +24,29 @@ bs4 = ">=4.14.3,<5"
 python-slugify = ">=8.0.4,<9"
 
 [feature.py.tasks]
-convert = "python -m nbconvert --to nbref.nbconvert.AriaExporter"
+convert = "python -m nbref.convert"
+
+[feature.py.tasks.create-notebook]
+cmd = "python -m nbref.convert docs/test-accessibility.ipynb"
+inputs = ["docs/test-accessibility.ipynb", "src/nbref/convert.py", "src/nbref/templates/main.html"]
+outputs = ["docs/test-accessibility.html"]
+
+[tasks.test-a11y]
+depends-on = [
+    "create-notebook",
+    { task = "axe", args=["docs/test-accessibility.html"]},
+    { task = "vnu", args=["docs/test-accessibility.html"]}
+]
 
 [feature.js.dependencies]
 nodejs = "25.*"
 
-[feature.js.tasks]
-test-axe = "npx axe"
-
 [feature.java.dependencies]
 vnu-validator = ">=24.10.17,<25"
 
-[feature.java.tasks]
-test-html = "vnu"
+[feature.java.tasks.vnu]
+args= ["file"]
+cmd = "vnu --errors-only {{file}}"
 
 [feature.py-dev.dependencies]
 flit = ">=3.11.0,<4"
@@ -44,3 +54,14 @@ flit = ">=3.11.0,<4"
 [dependencies]
 pip = ">=25.3,<26"
 anyio = ">=4.12.1,<5"
+
+[feature.js.tasks]
+install = "npm install"
+install-browser = "npx browser-driver-manager install chrome"
+achecker = { cmd = "npx achecker", depends-on = ["install"] }
+test = { depends-on = ["axe", "achecker"] }
+
+[tasks.axe]
+args = ["file"]
+cmd = "npx axe --tags wcag2a,wcag2aa,wcag2aaa,wcag21a,wcag21aa,wcag22aa,best-practice,ACT,section508,TTv5,EN-301-549,RGAAv4,experimental `python uriencode.py {{file}}`"
+depends-on = ["install", "install-browser"]

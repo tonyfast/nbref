@@ -1,13 +1,25 @@
+{# 
+    
+some of these can be conditions can and should be tested
+
+* don't use `dl` because they are unpredictable across OS and AT
+* use label[for] instead of nested inputs in labels
+* microdata is used to capture informal tags, formal tags have input, informal are output only    
+* don't pollute heading text, keep permalinks outside
+* use aria-controls for element.ariaControlsElements affordances
+
+#}
+
 {% set input_types = {
     "html": "text/html" ,
     "js": "application/javascript",
     "text": "text/plain",
     "json": "application/json",
     "file": "application/octet-stream",
-    "url": "text/uri-list"
+    "url": "text/uri-list",
+    "markdown": "text/markdown"
 } %}
 {% set disabled_types = {
-    "markdown": "text/markdown",
     "yaml": "application/x-yaml",
     "python": "text/x-python",
     "toml": "application/toml",
@@ -28,6 +40,7 @@
     "text/plain"
 ] %}
 {% set non_interactive = ' readonly tabindex="-1"' %}
+{% set non_interactive_disabled = ' disabled tabindex="-1"' %}
 {% set readonly_attr = non_interactive if config.readonly | default(True) else "" %}
 {% set readonly_class = " edit-only" if config.readonly | default(True) else "" %}
 {# the input source time is a predicate for potential runtime(s)
@@ -59,7 +72,7 @@
 
 {% endmacro %}
 
-<!-- activity log keeps one control panel for visiblity -->
+<!-- activity log keeps one control panel for visibility -->
 {% macro activity_log() %}
 <section class="activity">
     <details class="activity">
@@ -90,25 +103,27 @@
 {% set authors = nb.metadata.authors | default([]) %}
 {% set title = nb.metadata.title | default("") %}
 {% set nb_classes = config.nb_classes | default("") %}
-<section id="{{root_id}}:region" class="nb {{nb_classes}}" aria-labelledby="{{root_id}}:title" aria-describedby="{{root_id}}:desc" aria-modal="false" data-readonly="true" data-highlight-theme="">
+<section 
+    id="{{root_id}}:region" class="nb {{nb_classes}} {{config["orientation"]}}" aria-labelledby="{{root_id}}:title:" aria-describedby="{{root_id}}:desc:" 
+    data-modal="false" data-readonly="true" data-highlight-theme="">
     <form id="{{root_id}}" class="nb metadata" method="dialog" onsubmit="Cell.from(event).runCell();">
-        <hgroup>
-            <h1 id="{{root_id}}:title">
+        <hgroup class="edit-only">
+            <h1 id="{{root_id}}:title:">
                 <slot name="title">{{title}}</slot>
                 <span class="default">untitled notebook</span>
             </h1>
-            <p id="{{root_id}}:desc">
+            <p id="{{root_id}}:desc:">
                 <slot name="description">{{nb.metadata.description | default("")}}</slot>
             </p>
         </hgroup>
         <ol class="metadata known edit-only">
             <li class="title">
-                <label for="{{root_id}}:metadata:title">title</label>
-                <input type="text" id="{{root_id}}:metadata:title" name="{{root_id}}:metadata:title" value="{{title}}" placeholder="untitled"{{readonly_attr}}>
+                <label for="{{root_id}}:title">title</label>
+                <input type="text" id="{{root_id}}:title" name="title" value="{{title}}" placeholder="untitled"{{readonly_attr}}>
             </li>
             <li class="description">
-                <label for="{{root_id}}metadata:description">description</label>  
-                <textarea id="{{root_id}}:metadata:description" name="{{root_id}}:metadata:description" placeholder=""{{readonly_attr}}>{{nb.metadata.description | default("")}}</textarea>
+                <label for="{{root_id}}:desc">description</label>  
+                <textarea id="{{root_id}}:desc" name="description" placeholder=""{{readonly_attr}}>{{nb.metadata.description | default("")}}</textarea>
             </li>
         </ol>
         <ol class="metadata known">
@@ -116,21 +131,26 @@
             {% set created_at = nb.metadata.created_at | default("") %}
             <li class="updated_at{{is_empty(updated_at)}}">
                 <label>updated at</label>
-                <slot name="updated_at"><time>{{updated_at}}</time></slot>
+                <slot name="updated_at">{% if updated_at %}<time>{{updated_at}}</time>{% endif %}</slot>
             </li>
             <li class="created_at{{is_empty(created_at)}}">
                 <label>created at</label>
-                <slot name="created_at"><time>{{created_at}}</time></slot>
+                <slot name="created_at">{% if created_at %}<time>{{created_at}}</time>{% endif %}</slot>
             </li>
             <li class="authors" data-authors="{{authors | length}}">
-                <label id="{{root_id}}:metadata:authors">author<span class="plural">s</span></label>
+                <label id="{{root_id}}:authors">author<span class="plural">s</span></label>
                 <ol class="author">
                     {% for author in authors %}
                     <li class="author">
-                        <input type="text" aria-labelledby="{{root_id}}:metadata:authors" name="authors" value="{{author.name | default("")}}" placeholder="author name"{{readonly_attr}}> 
+                        <input 
+                            type="text" 
+                            aria-labelledby="{{root_id}}:authors" 
+                            name="authors" value="{{author.name | default("")}}" 
+                            placeholder="author name"{{readonly_attr}}> 
                     </li>
                     {% endfor %}
                 </ol>
+                <button class="edit-only">add author</button>
             </li>
         </ol>
         <details class="metadata unknown edit-only">
@@ -139,51 +159,50 @@
                 {% for k, v in nb.metadata.items() %}
                     {% if k not in ["title", "description", "updated_at", "created_at", "authors", "id"] %}
                     <li>
-                        <label for="{{root_id}}:metadata:{{k}}">{{k}}</label>
-                        <input type="text" id="{{root_id}}:metadata:{{k}}" name="{{k}}" value="{{v | default("")}}" {{non_interactive}}>
+                        <label for="{{root_id}}:{{k}}">{{k}}</label>
+                        <input type="text" id="{{root_id}}:{{k}}" name="{{k}}" value="{{v | default("")}}" {{non_interactive}}>
                     </li>
                     {% endif %}
                 {% endfor %}
             </ul>
+            <button class="edit-only">add metadata key</button>
         </details>
-        <details class="headings" open>
+        <details class="nb nav headings"{% if config.navigation_expanded %} open{% endif %}>
             <summary>headings</summary>
             <p class="flex row">
                 <span><slot name="cells_length">{{nb.cells | length}}</slot></span>
-                <select name="execution"{{non_interactive}}>
+                <select name="execution"{{non_interactive_disabled}}>
                     <option value="executed">executed</option>
                     <option value="unexecuted">unexecuted</option>
                     <option value="partially executed">partial executed</option>
                 </select>
-                <select name="success"{{non_interactive}}>
+                <select name="success"{{non_interactive_disabled}}>
                     <option value="successfully">successfully</option>
                     <option value="unsuccessfully">unsuccessfully</option>
                 </select>
-                <select name="order"{{non_interactive}}>
+                <select name="order"{{non_interactive_disabled}}>
                     <option value="in uniform order">in uniform order</option>
                     <option value="in order">in order</option>
                     <option value="out of order">out of order</option>
                 </select>
             </p>
-            <nav class="cells headings">
+            <nav class="nb headings" id="{{root_id}}:nav">
                 <menu role="toolbar">
-                    <li>
-                        <label>
-                            <input type="checkbox" name="show_cells">
-                            show cells
-                        </label>
+                    <li class="cells">
+                        <label for="{{root_id}}:show_cells">show cells</label>
+                        <input id="{{root_id}}:show_cells" type="checkbox" name="show_cells" 
+                        onchange="toggleClass(event)" value="cells" aria-controls="{{root_id}}:nav">
                     </li>
-                    <li>
-                        <label>
-                            <input type="checkbox" name="show_headings" checked>
-                            show headings
-                        </label>
+                    <li class="headings">
+                        <label>show headings</label>
+                        <input id="{{root_id}}:show_headings" type="checkbox" name="show_headings" checked
+                        onchange="toggleClass(event)" value="headings" aria-controls="{{root_id}}:nav">
                     </li>
                 </menu>
                 <ol class="nav headings">
                     {% for cell in nb.cells %}
-                    <li class="cell" data-cell="{{loop.index}}" aria-controls="">
-                        <a href="#cell:{{loop.index}}">
+                    <li class="cell" data-cell="{{loop.index}}">
+                        <a href="#cell:{{loop.index}}" class="cell">
                             <span>cell&nbsp;</span>
                             <slot name="index">{{loop.index}}</slot>
                         </a>
@@ -193,47 +212,45 @@
                 </details>
             </nav>
         </details>
-        <details class="layout">
+        <details class="nb layout">
             <summary>layout</summary>
-            <menu role="toolbar">
-                <dl role="group" class="layout flex row">
-                    <dt>mode</dt>
-                    <dd>
-                        <label>
-                                <span class="label">mode</span>
-                                <select name="mode" aria-controls="{{root_id}}:region" onchange="toggleClass(event);">
-                                    <option value="read-mode" selected>read mode</option>
-                                    <option value="run-mode">run mode</option>
-                                    <option value="edit-mode">edit mode</option>
-                                    <option value="select-mode">select mode</option>
-                                </select>
-                            </label
-                    </dd>
-                    <dt class="nv">horizontal layout</dt>
-                    <dd>
-                        <select name="horizontal">
-                            <option value="">compact</option>
-                            <option value="wide">wide</option>
-                        </select>
-                    </dd>
-                    <dt>columns</dt>
-                    <dd>
-                        <input name="columns" type="number" value="1">
-                    </dd>
-                    <dt>reverse</dt>
-                    <dd><input type="checkbox" name="reverse"></dd>
-                    <dt>orientation</dt>
-                    <dd>
-                        <select name="orientation" aria-controls="{{root_id}}:region" onchange="toggleClass(event)">
-                            <option value="">input above output</option>
-                            <option value="out-in">input below output</option>
-                            <option value="ltr">input left of output</option>
-                            <option value="rtl">input right of output</option>
-                            <option value="no-outputs">input only</option>
-                            <option value="no-source">output only</option>
-                        </select>
-                    </dd>
-                </dl>
+            <menu class="nb toolbar layout flex row" role="toolbar">
+                <li>
+                    <label for="{{root_id}}:mode">mode</label>
+                    <select id="{{root_id}}:mode" name="mode" aria-controls="{{root_id}}:region" onchange="toggleClass(event);">
+                        <option value="read-mode" selected>read mode</option>
+                        <option value="run-mode">run mode</option>
+                        <option value="edit-mode">edit mode</option>
+                        <option value="select-mode">select mode</option>
+                    </select>
+                </li>
+                <li>
+                    <label for="{{root_id}}:width">width</label>
+                    <select id="{{root_id}}:width" name="horizontal">
+                        <option value="">compact</option>
+                        <option value="wide">wide</option>
+                    </select>
+                </li>
+                <li>
+                    <label for="{{root_id}}:columns">columns</label>
+                    <input id="{{root_id}}:columns" name="columns" type="number" value="1">
+                </li>
+                <li>
+                    <label for="{{root_id}}:reversed">reversed order</label>
+                    <input id="{{root_id}}:reversed" type="checkbox" name="reverse">
+                </li>
+                <li>
+                    {{config}}
+                    <label for="{{root_id}}:orientation">input output orientation</label>
+                    <select id="{{root_id}}:orientation" name="orientation" aria-controls="{{root_id}}:region" onchange="toggleClass(event)">
+                        <option value="in-out"{% if config["orientation"] == "in-out" %} selected{% endif %}>input above output</option>
+                        <option value="out-in"{% if config["orientation"] == "out-in" %} selected{% endif %}>input below output</option>
+                        <option value="ltr"{% if config["orientation"] == "ltr" %} selected{% endif %}>input left of output</option>
+                        <option value="rtl"{% if config["orientation"] == "rtl" %} selected{% endif %}>input right of output</option>
+                        <option value="no-outputs"{% if config["orientation"] == "no-outputs" %} selected{% endif %}>input only</option>
+                        <option value="no-source"{% if config["orientation"] == "no-source" %} selected{% endif %}>output only</option>
+                    </select>
+                </li>
             </menu>
         </details>
         <script class="action">
@@ -248,9 +265,10 @@
     <hr>
     <script class="metadata" type="application/json">{{nb.metadata | dumps}}</script>
     <!-- paginate and layout interface goes here -->
-    <ol class="cells" aria-setsize="{{nb.cells | length}}" aria-multiselectable="false">
+    {# making the cells multiselectable requires a role change #}
+    <ol class="cells" data-multiselectable="false">
         {% for cell in nb.cells %}
-            <li class="cell {{cell.cell_type}}" id="cell:{{loop.index}}" aria-posinset="{{loop.index}}">
+            <li class="cell {{cell.cell_type}}" id="{{root_id}}:{{loop.index}}" aria-posinset="{{loop.index}}">
                 {{ notebook_cell(cell, loop, nb, root_id, config) }}
             </li>
         {% endfor %}
@@ -282,7 +300,7 @@
 {% endif %}
 {% set sloc = source.splitlines() | sloc %}
 <section class="cell {{cell.cell_type}} {{current_input_type}}" data-outputs="{{cell.outputs | default([]) | length}}" data-sloc="" data-execution-count="{{execution_count}}">
-    <form class="cell metadata " id="{{cell.id}}" method="dialog" onsubmit="Cell.from(event).runCell();">
+    <form class="cell metadata" id="{{parent_id}}:{{cell.id}}" name="{{cell.id}}" method="dialog" onsubmit="Cell.from(event).runCell();">
         <hgroup class="run-only">
             <h2>
                 <slot name="title">{{cell.metadata.title | default("") }}</slot>
@@ -294,7 +312,7 @@
         </hgroup>
         <menu class="cell toolbar" role="toolbar">
             <li class="index">
-                <a class="index" href="#{{cell_loop.index}}">
+                <a class="index" href="#{{parent_id}}:{{cell_loop.index}}">
                     <span class="cell label nv">cell </span>
                     <slot name="index">{{cell_loop.index}}</slot>
                 </a>
@@ -332,46 +350,50 @@
             <li class="runtime run-only" hidden>
                 <label>
                     <span class="label">runtime</span>
-                    <select name="runtime" readonly tabindex="-1">
+                    <select name="runtime" disabled tabindex="-1">
                         <option value="text/plain" selected>browser</option>
                     </select>
                 </label>
             </li>
         </menu>
-        <details class="input"{{source_open}}>
-            <summary class="input execution_count">
-                <span class="prefix"></span>
-                <input name="execution_count"  value="{{execution_count}}"{{non_interactive}}>
-                <span class="suffix"></span>
-            </summary>
-            <section class="raw input">
-                <textarea name="source" rows="{{source | splitlines | length}}"{{readonly_attr}}>{{source}}</textarea>
-                <fieldset name="files">
-                    <legend>attached files</legend>
-                    {% set files = cell.metadata | get("attachments", {}) %}
-                    <ol>
-                        {% for filename, filedata in files.items() %}
-                        <li class="filename">
-                            <label>
-                                <span class="label">{{filename}}</span>
-                                <input type="file" name="attachments" form="{{cell.id}}">
-                            </label>
-                        </li>
-                        {% endfor %}
-                        <li class="add filename">
-                            <span class="label">add file</span>
-                            <!-- when the file loads it should be possible to reset the input -->
-                            <input type="file" name="files">
-                        </li>
-                    </ol>
-                </fieldset>
-                <button class="run-only" type="submit">run</button>
-            </section>
-            <section class="source highlight">
-                <slot name="highlight">{{source | highlight(cell.cell_type) | safe}}</slot>
-            </section>
-        </details>
     </form>
+    <details class="input"{{source_open}}>
+        <summary class="input execution_count">
+            <span class="prefix"></span>
+            <input name="execution_count"  value="{{execution_count}}"{{non_interactive}}>
+            <span class="suffix"></span>
+        </summary>
+        {% set controls %}{% for i in cell.outputs | length | range %}{% if loop.index0 %} {% endif %}{{parent_id}}:{{cell.id}}:outputs:{{loop.index0}}{% endfor %}{% endset %}
+        <section class="raw input">
+            <textarea name="source" form="{{parent_id}}:{{cell.id}}" rows="{{source | splitlines | length | maximum(1)}}"{{readonly_attr}}
+            {% if controls %}aria-controls="{{controls}}"{% endif %}>{{source}}</textarea>
+            <fieldset name="files">
+                <legend>attached files</legend>
+                {% set files = cell.metadata | get("attachments", {}) %}
+                <ol>
+                    {% for filename, filedata in files.items() %}
+                    <li class="filename">
+                        <label>
+                            <span class="label">{{filename}}</span>
+                            <input type="file" name="attachments" form="{{cell.id}}">
+                        </label>
+                    </li>
+                    {% endfor %}
+                    <li class="add filename">
+                        <span class="label">add file</span>
+                        <!-- when the file loads it should be possible to reset the input -->
+                        <input type="file" name="files">
+                    </li>
+                </ol>
+            </fieldset>
+            <button class="run-only" type="submit">run</button>
+        </section>
+        <section class="source highlight">
+            <slot name="highlight">{{source | highlight(cell.cell_type) | safe}}</slot>
+        </section>
+    </details>
+    {# the progress bar exists for when the execution happens this should be updated #}
+    <meter class="progress" min="0" max="100" value="100"></meter>
     <details class="outputs"{{outputs_open}}>
         <summary class="output execution_count">
             <span class="prefix"></span>
@@ -380,29 +402,33 @@
         </summary>
         <ol class="outputs" data-setsize="{{cell.outputs | default([]) | length}}" role="none">
             {% if cell.cell_type == "markdown" %}
+                {% set local_html = cell.source | join("") | markdown %}
                 {% set outputs = [{
                     "output_type": "display_data",
-                    "data": {"text/markdown": cell.source}
+                    "data": {
+                        "text/markdown": cell.source,
+                        "text/html": local_html,
+                    }
                 }] %}
             {% else %}
                 {% set outputs = cell.outputs | default([]) %}
             {% endif %}
-            {% for output in outputs %}
+            {% for output in  outputs %}
                 <li class="output {{output.output_type}}">
-                    {{ notebook_cell_output(output, loop, cell, cell_loop, nb, config) }}
+                    {{ notebook_cell_output(output, loop, cell, cell_loop, nb, parent_id, config) }}
                 </li>
             {% endfor %}
-            </ol>
+        </ol>
     </details>
 </section>
 {% endmacro %}
 
-{% macro notebook_cell_output(output, output_loop, cell, cell_loop, nb, config) %}
-{% set id %}{{cell.id}}:outputs:{{output_loop.index0}}{% endset %}
+{% macro notebook_cell_output(output, output_loop, cell, cell_loop, nb, parent_id, config) %}
+{% set id %}{{parent_id}}:{{cell.id}}:outputs:{{output_loop.index0}}{% endset %}
 {% if output.output_type == "stream" %}
 <div id="{{id}}" class="output {{output.output_type}} {{output.name}}" role="group">
     <label class="stream">{{output.name}}</label>
-    <pre><code class="text">{{output.text}}</code></pre>
+    <pre><code class="text">{{output.text | escape}}</code></pre>
 </div>
 {% elif output.output_type == "error" %}
 <div id="{{id}}" class="output {{output.output_type}} {{output.ename}}" role="group">
@@ -415,51 +441,46 @@
     {% endfor %}
 </div>
 {% elif output.output_type == "execute_result" or output.output_type == "display_data" %}
-<ol id="{{id}}" class="output {{output.output_type}}" role="none">
-    {% for mime, data in output.data.items() %}
+<ul id="{{id}}" class="output {{output.output_type}}" role="none" itemscope>
+    {% for mime in output.data | order_outputs(display_priority) %}
+    {% set data = output.data[mime] %}
     {% set alt = output.metadata | get(mime, {}) | get("alt", "Image") %}
-    <li class="mime" data-mime="{{mime}}">
-        <label class="mime">{{mime}}</label>
-        <div id="{{cell.id}}:outputs:{{output_loop.index}}:{{mime}}" class="mime {{output.output_type}}" >
-            {% if mime == "text/plain" %}
-                <pre>{{data | join("")}}</pre>
-            {% elif mime == "text/html" %}
-                {{data | join("") | safe}}
-            {% elif mime == "text/markdown" %}
-                {{data | join("") | markdown | safe}}
-            {% elif mime == "image/jpeg" %}
-                <img src="data:image/jpeg;base64,{{data | join("")}}" alt="{{alt}}">
-            {% elif mime == "image/svg+xml" %}
-                {{data | join("") | safe}}
-            {% elif mime == "image/bmp" %}
-                <img src="data:image/bmp;base64,{{data | join("")}}" alt="{{alt}}">
-            {% elif mime == "image/png" %}
-                <img src="data:image/png;base64,{{data | join("")}}" alt="{{alt}}">
-            {% elif mime == "application/javascript" %}
-                {# could be a module #}
-                <script type="{{mime}}">
-                    {{data | join("")}}
-                </script>
-            {% elif mime == "vnd.jupyter.widget-view+json" %}
-                <script type="{{mime}}">
-                    {{data | join("")}}
-                </script>
-            {% elif mime.startswith("application/json+ipynb") %}
-                {{ notebook(data, config) }}}
-            {% elif mime.startswith("application/json") %}
-                <script type="{{mime}}">{{data | tojson(indent=2)}}</script>
-            {% else %}
-                <pre>Unsupported MIME type: {{mime}}</pre>
-            {% endif %}
-        <li>
+    <li class="mime {{output.output_type}}" itemprop="{{mime}}">
+        {% if mime == "text/plain" %}
+            <pre>{{data | join("") | escape}}</pre>
+        {% elif mime == "text/html" %}
+            {{data | join("") | safe}}
+        {% elif mime == "text/markdown" %}
+        <script type="{{mime}}">{{data | join("") | safe}}</script>
+        {% elif mime == "image/jpeg" %}
+            <img src="data:image/jpeg;base64,{{data | join("")}}" alt="{{alt}}">
+        {% elif mime == "image/svg+xml" %}
+            {{data | join("") | safe}}
+        {% elif mime == "image/bmp" %}
+            <img src="data:image/bmp;base64,{{data | join("")}}" alt="{{alt}}">
+        {% elif mime == "image/png" %}
+            <img src="data:image/png;base64,{{data | join("")}}" alt="{{alt}}">
+        {% elif mime == "application/javascript" %}
+            {# could be a module #}
+            <script type="{{mime}}">{{data | join("")}}</script>
+        {% elif mime == "vnd.jupyter.widget-view+json" %}
+            <script type="{{mime}}">{{data | join("")}}</script>
+        {% elif mime.startswith("application/json+ipynb") %}
+            {{ notebook(data, config) }}}
+        {% elif mime.startswith("application/json") %}
+            <script type="{{mime}}">{{data | tojson(indent=2)}}</script>
+        {% else %}
+            <pre>Unsupported MIME type: {{mime}}</pre>
+        {% endif %}
+    </li>
     {% endfor %}
-    </ol>
+</ul>
 {% else %}
 <ol id="{{id}}" class="output unknown" role="none">
     <script type="application/json">
         {{output | tojson(indent=2)}}
     </script>
-</ol>
+</ul>
 {% endif %}
 {% endmacro %}
 
@@ -491,9 +512,327 @@
 {% endmacro %}
 
 {% macro html(nb, config) %}
-<html>
+<!DOCTYPE html>
+<html lang="{{config.lang | default("en")}}">
     <head>
         {{ head(nb, config) }}
+        <style id="core">
+            :root {
+                --width: 100%;
+            }
+            :not(.wide) {
+                & img {
+                    max-width: 100%;
+                }
+            }
+            .wide {
+                overflow-x: auto;
+                & section.nb {
+                    width: max-content;
+                    min-width: 100%;
+        
+                    & section.cell {
+                        width: max-content;
+                        min-width: 100%;
+                        textarea[name="source"] {
+                            resize: both;
+                        }
+                    }
+                }        
+            }
+            .flex {
+                display: flex;
+                &.row {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                }
+                &.column {
+                    flex-direction: column;
+                }
+            }
+            body {
+                overflow-x: hidden;
+                & li.output {
+                    overflow-x: auto;
+                }
+            }
+            input[readonly], select[readonly] {
+                display: inline;
+            }]
+            [readonly] {
+                border: none;
+                font-family: inherit;
+                font-size: inherit;
+                padding: unset;
+                width: auto;
+                &[tabindex="-1"]:not(textarea[name=source]) {
+                    pointer-events: none;
+                }  
+            }
+            section.nb[data-highlight-theme=""] {
+                & section.highlight {
+                    display: none;
+                }
+            }
+            section.cell {
+                & fieldset[name="files"] {
+                    display: none;
+                }
+                &.application\/octet-stream {
+                    fieldset[name="files"] {
+                        display: block;
+                        width: 100%;
+                        box-sizing: border-box;
+                    }
+                    textarea[name="source"] {
+                        display: none;
+        
+                    }
+                }
+            }
+            summary.execution_count {
+                width: fit-content;
+            }
+            details.activity:not([open]) + table.activity,
+            .nv:not(:focus-within):not(:active), 
+            .non-visual:not(:focus-within):not(:active), 
+            .sr-only:not(:focus-within):not(:active) {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                border: 0;
+            }
+            textarea[name=source] {
+                font-family: monospace;
+                font-size: 1em;
+                width: 100%;
+                resize: vertical;
+            }
+            menu[role="toolbar"], header>menu {
+                display: flex;
+                width: var(--width);
+                flex-wrap: wrap;
+                flex-direction: row;
+                list-style: none; 
+                padding-left: unset;
+                & > li:not(:last-of-type) {
+                    margin-bottom: 1em;
+                    margin-right: 1em;
+                }
+            }
+            ol.cells, ol.outputs, ul.output {
+                list-style: none;
+                padding-left: unset;
+            }
+            details.outputs :is(h1, h2, h3, h4, h5, h6) {
+                display: inline-block
+            }
+            a.h {
+                margin-right: 1em;
+            }
+            details.outputs label.mime {
+                display: none;
+            }
+            nav.cells dl.nav {
+                &:not(.headings) dd, &:not(.cells) dt {
+                    display: none;
+                }
+            }
+            details.site[data-entries="0"] {
+                display: none;
+            }
+            form.nb, details.input, details.outputs {
+                &>* {
+                    margin: 1em;
+                }
+            }
+        </style>
+        <style id="style:font">
+        @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        html {
+            font-family: "Atkinson Hyperlegible";
+        }
+        :root {
+            --focus: 3px;
+        }
+        section.nb:focus-visible,
+        section.cell:focus-visible,
+        :focus-visible {
+            outline: var(--focus) solid;
+            box-shadow: 0 0 0 calc(2 * var(--focus));
+            
+        }
+        section.cell:focus-within {
+            outline-style: dashed;
+        }
+        section.nb:focus-within, section.nb form.nb.metadata:focus-within {
+            outline-style: dotted;
+        }
+        </style>
+        <style class="display_data">
+            script[type="text/markdown"] {
+                display: block;
+            }
+        </style>
+        <style class="modes">
+            section.read-mode:not(.run-mode):not(.edit-mode),
+            section.nb:not(.run-mode):not(.edit-mode) {
+                & form.nb, & section.cell {
+                    .run-only, .edit-only {
+                        display: none;
+                    }
+                    &.text\/markdown {
+                        details.input {
+                            display: none;
+                        }
+                    }
+                }
+                & section.cell[data-sloc="0"] {
+                    & details.input:first-of-type {
+                        display: none;
+                    }
+                }
+                & section.cell[data-outputs="0"] {
+                    & details.outputs:first-of-type {
+                        display: none;
+                    }
+                }
+            }
+            section.nb:not(.edit-mode),
+            section.nb.run-mode:not(.edit-mode) {
+                & form.nb, & section.cell {
+                    & .edit-only {
+                        display: none;
+                    }   
+                }
+            }
+            .select-only {
+                display: none;
+            }
+            input[name=current]:not(:focus):not(:checked) {
+                opacity: 0;
+            }
+            li.empty {
+                display: none;
+                & ~ :not(dt) {
+                    display: none;
+                }
+            }
+            li[data-authors="0"] {
+                display: none;
+                & ~ :not(dt) {
+                    display: none;
+                }
+            }
+            dd.statistics>* {
+                margin-right: 1em;
+            }
+            dl.layout > dt {
+                display: none;
+            }
+            section.nb.no-source {
+                & form.cell, & details.input {
+                    display: none;
+                }
+                
+            }
+            section.nb.no-outputs details.outputs {
+                display: none;
+            }
+            section.nb.no-metadata {
+                & form.nb {
+                    display: none;
+                }
+            }
+            section.cell {
+                grid-template-rows: auto auto auto;
+                grid-template-columns: auto auto;
+                & form.cell {
+                    grid-template-columns: subgrid;
+                    grid-template-rows: subgrid;
+                    &>menu  {
+                        grid-area: label;
+                    }
+                    &>details.source {
+                        grid-area: source;
+                    }
+                }
+                &>details.outputs {
+                    grid-area: outputs;
+                }
+            }
+            
+            section.nb.out-in {
+                & section.cell {
+                    display: grid;
+                    form.cell {
+                        display: grid;
+                        &>menu  {
+                            grid-row: 1/2;
+                            grid-column: 1/3;
+                        }
+                        &>details.input {
+                            grid-row: 3/4;
+                            grid-column: 1/3;
+                        }
+                    }
+                    &>details.outputs {
+                        grid-row: 2/3;
+                        grid-column: 1/3;
+                    }
+                }
+            }
+            ul.output {
+                & li[itemprop="text/html"] ~ * {
+                    display: none;
+                }
+                & li[itemprop="text/markdown"] ~ * {
+                    display: none;
+                }
+            }
+        
+            section.cell[data-execution-count="-1"] > form > details.input > summary.execution_count,
+            section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count {
+                & > [name=execution_count] {
+                    display: none;
+                }
+            }
+            section.cell[data-execution-count="-1"] > form > details.input > summary.execution_count::before {
+                content: "input";
+            }
+            section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count::before {
+                content: "output";
+            }
+            meter.progress[value="100"] {
+                display: none;
+            }
+            details.nb:not([open]) {
+                display: inline-block;
+            }
+            a.h {
+                & > :is(h1, h2, h3, h4, h5, h6) {
+                    display: inline-block;
+                }
+            }
+            button {
+                min-width: 24px;
+                min-height: 24px;
+            }
+        </style>
+        <style>
+            nav.nb {
+                &:not(.cells) ol.nav a.cell {
+                        display: none
+                }
+                &:not(.headings) ol.nav ol.headings {
+                    display: none;
+                }
+            }
+        </style>
     </head>
     <body id="BODY">
         <header id="HEADER">
@@ -502,13 +841,13 @@
                     <a class="skip" accesskey="(" href="TOP" href="#MAIN">skip to main </a>    
                 </li>
                 <li>
-                    <a class="skip" href="#BOTTOM" accesskey=")">skip to bottom</a>`
+                    <a class="skip" href="#BOTTOM" accesskey=")">skip to bottom</a>
                 </li>
                 
             </menu>
             <menu>
                 <li class="brand">
-                    <a href="#"><img alt="nothing"></a>
+                    <a href="#"><img alt="nothing" src=""></a>
                 </li>
                 <li class="settings">
                     <a aria-controls="settings:dialog" role="button" href="#" onclick="this.ariaControlsElements.forEach(toggleDialog)" accesskey=",">settings</a>
@@ -544,7 +883,7 @@
             </template>
         </main>
         <footer id="FOOTER">
-            <menu role="toolbar">
+            <menu>
                 <li class="settings">
                     <button aria-controls="settings:dialog">settings</button>
                 </li>
@@ -560,7 +899,8 @@
         </footer>
         <dialog id="settings:dialog">
             {{notebook(settings, {
-                "nb_classes": " no-source no-metadata"
+                "nb_classes": "no-metadata",
+                "orientation": "no-source",
             }, "settings")}}
         </dialog>
         <dialog id="removed:dialog">
@@ -569,6 +909,554 @@
         <dialog id="history:dialog">
             {{notebook({"cells": [], "metadata": {}}, {}, "history")}}
         </dialog>
+        <script>
+            var input_types = {{ all_input_types | tojson }};
+            function closest(object, selector) {
+                if (object.matches(selector)) {
+                    return object
+                } 
+                var closest = object.closest(selector);
+                if (closest) {
+                    return closest;
+                }
+            }
+            class Notebook {
+                constructor(object) {
+                    if (!object) {
+                        object = document.querySelector("section.nb");
+                    }
+                    if (typeof object === "string") {
+                        object = document.getElementById(object);
+                    }
+                    this.region = closest(object, "section.nb");
+                    this.form = this.region.querySelector("form.nb");
+                }
+                getFormData() {
+                    return new FormData(this.form);
+                }
+                getCellsOrder () {
+                    const formData = this.getFormData();
+                    return formData.getAll("cells");
+                }
+                getCell(index) {
+                    const cellId = this.getCellsOrder()[index];
+                    return Cell.from(document.getElementById(cellId));
+                }
+                getCells () {
+                    const parent = this;
+                    return this.getCellsOrder().map(id => new Cell(id, parent));
+                }
+                getNotebookData() {
+                    // generate a notebook object based on the nbformat schema for notebooks using the form data
+                    const formData = this.getFormData();
+                    const notebook = Object.fromEntries(formData.entries());
+                    const {title, description, authors, ...metadata} = notebook;
+                    notebook.metadata = metadata;
+                    notebook.metadata.title = title;
+                    notebook.metadata.description = description;
+                    notebook.metadata.authors = formData.getAll("nb:metadata:authors").map(name => ({name}));
+                    notebook.cells = this.getCells().map(cell => cell.getCellData());
+                    return notebook;
+                }
+                static from(object) {
+                    return new Notebook(object.target || object);
+                }
+                updateMetadata(nb) {
+                    return this
+                }
+                updateNav() {
+                    const ol = newElement("ol")
+                    this.region.querySelectorAll("ol.cells > li.cell > section.cell").forEach(
+                        (cell, i) => {
+                            console.log(i)
+                            const item = newElement("li", {class: "cell"}, newElement(
+                                "a", {
+                                    href: "#" + cell.closest("li").getAttribute("id"),
+                                }, newElement("span", {}, "cell"), document.createTextNode((i + 1).toString())
+                            ));
+                            const headings = cell.querySelectorAll("details.outputs :not(dd[itemprop='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)");
+                            ol.appendChild(item);
+                            if (headings.length) {
+                                const list = newElement("ol")
+                                item.append(list)
+                                headings.forEach(
+                                    (heading) => {
+                                        if (!heading.getAttribute("id")) {
+                                            heading.setAttribute("id", slugify(heading.textContent))
+                                        }
+                                        list.appendChild(newElement("li", {class: "h"}, newElement(
+                                            "a", {
+                                                href: `#${heading.getAttribute("id")}`
+                                            }, heading.textContent 
+                                        )))        
+                                    }
+                                )
+                            }
+                            
+                            
+                        }
+                    )
+                    this.region.querySelector("ol.nav.headings").replaceChildren(...ol.children)
+                }
+                addCells(...cells) {
+                    const cellsList = this.region.querySelector("ol.cells");
+                    cells.map(
+                        (cellData, i) => Cell.fromData(
+                            cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length}
+                        )).forEach(cell => {
+                            cellsList.appendChild(cell.region.parentElement);
+                        }
+                    );
+        
+                    const diagrams = this.region.querySelectorAll("code.language-mermaid");
+                    document.forms["text/mermaid"]
+                    return this
+                }
+                static fromData(object) {
+                    const nb = new Notebook(this.newTemplate());
+                    const cellsList = nb.region.querySelector("ol.cells");
+                    nb.updateMetadata(object)
+                    nb.region.querySelector("[name=cells_length]").textContent = object.cells.length
+                    nb.region.querySelector("ol.cells").setAttribute("aria-setsize", object.cells.length)
+                    nb.addCells(...object.cells);
+                    nb.updateNav(object)
+                    return nb
+                }
+                static newTemplate() {
+                    return document.getElementById("nb:template").content.cloneNode(true).querySelector("section.nb");
+                }
+        
+                // Additional methods to manipulate the notebook can be added here
+            }
+            function slugify(input) {
+                if (!input)
+                    return '';
+        
+                // make lower case and trim
+                var slug = input.toLowerCase().trim();
+        
+                // remove accents from charaters
+                slug = slug.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        
+                // replace invalid chars with spaces
+                slug = slug.replace(/[^a-z0-9\s-]/g, ' ').trim();
+        
+                // replace multiple spaces or hyphens with a single hyphen
+                slug = slug.replace(/[\s-]+/g, '-');
+        
+                return slug;
+            }
+            class Cell {
+                constructor(object, parent, index) {
+                    if (typeof object === "string") {
+                        object = document.getElementById(object);
+                    }
+                    this.region = closest(object, "li.cell").querySelector("section");
+                    this.form = this.region.querySelector("form.metadata");
+                    this.outputs = [];
+                    this.parent = parent;
+                    this.index = index;
+                }
+                getNotebook() {
+                    return Notebook.from(this.region);
+                }
+                getCellData() {
+                    // generate a cell object based on the nbformat schema for notebooks using the form data
+                    const formData = this.getFormData();
+                    const cell = Object.fromEntries(formData.entries());
+                    const {source, cell_type, id, execution_count, ...metadata} = cell;
+                    cell.metadata = metadata;
+                    if (cell_type === "code") {
+                        cell.execution_count = parseInt(execution_count) || null;
+                        cell.outputs = this.getOutputs();
+                    } else {
+                        delete cell.execution_count;
+                        // delete cell.outputs;
+                    }
+                    return cell
+                }
+                getOutputs() {
+                    const outputsSection = this.region.querySelector("details.outputs ol.outputs");
+                    const outputArticles = Array.from(outputsSection.querySelectorAll("li.output"));
+                    const outputs = outputArticles.map(article => {
+                        const output = Output.from(article);
+                        // return output.getOutputData();
+                    });
+                    return outputs;
+                }
+                getFormData() {
+                    return new FormData(this.form);
+                }
+                static from(object, parent) {
+                    if (object.cell_type) {
+                        return Cell.fromData(object, parent)
+                    }
+                    return new Cell(object.target || object, parent);
+                }
+                static newTemplate() {
+                    return document.getElementById("cell:template").content.cloneNode(true).querySelector("section.cell");   
+                }
+                static fromData(object, parent, options={}) {
+                    const cell = new Cell(this.newTemplate(), parent, options.index);
+                    object.id ??= crypto.randomUUID();
+                    if (object.cell_type == "markdown") {
+                        object.outputs = [newOutput({"text/markdown": object.source})]
+                    }
+                    cell.updateCell(object, options);
+                    return cell
+                }
+                changeInputType() {
+                    const formData = this.getFormData();
+                    const input_type = formData.get("input_type");
+                    this.region.classList.remove(...Object.values(input_types));
+                    this.region.classList.add(input_type);
+                }
+                runCell() {
+                    const cellData = this.getCellData();
+                    this.outputsList().innerHTML = "";
+                    const promises = new Runtime(cellData.metadata.runtime).runCell(this);
+                }
+                outputsList() {
+                    return this.region.querySelector("details.outputs ol.outputs")
+                }
+                appendOutputs(cell, ...outputs) {
+                    const outputsSection = this.outputsList();
+                    outputs.forEach(outputData => {
+                        outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(cell, outputData).region));
+                    });
+                    this.region.dataset.outputs = outputs.length;
+                }
+                updateCell(data, options = {}) {
+                    // this.updateMetadata(data);
+                    // this.updateExecutionCount(data);
+                    this.region.querySelectorAll("form.cell [name=index]").forEach(
+                        (index) => {
+                            index.textContent = options.index + 1;
+                        }
+                    )
+                    this.region.querySelector("a.index").setAttribute("id", `cell:${options.index + 1}`)
+                    this.region.querySelector("a.index").setAttribute("href", `#cell:${options.index + 1}`)
+                    this.region.parentElement.setAttribute("pos-inset", data.index + 1)
+                    this.region.parentElement.id = this.region.parentElement.id.replace("CELLID", data.id)
+        
+                    this.region.querySelector("[name=cells]").setAttribute("form", options.parent_id);  
+                    this.form.setAttribute("id", data.id);
+                    this.form.querySelector("[name=id]").value = data.id;
+                    this.form.querySelector("[name=cells]").value = data.id;
+        
+                    this.form.execution_count.value = data.execution_count || -1;
+                    this.region.querySelector("slot[name=execution_count]").textContent = this.form.execution_count.value;
+                    this.region.dataset.executionCount = this.form.execution_count.value;
+                    
+        
+                    const inputType = data.metadata.input_type || "text/html";
+                    this.form.input_type.value = inputType;
+                    this.updateSource(data);
+                    // this.updateOutputs(data);
+                    this.appendOutputs(data, ...data.outputs || []);
+                    return this
+                }
+                updateSource(data) {
+                    if ("source" in data) {
+                        const sourceTextarea = this.region.querySelector("details.input textarea[name='source']");
+                        let source = data.source;
+                        if (source.join) {
+                            source = source.join("");
+                        }
+                        this.region.dataset.sloc = source.split("\n").filter(x => x.trim()).length
+                        sourceTextarea.textContent = source;
+                        sourceTextarea.rows = (source.split("\n").length || 0 ) + 1;
+                        // const highlightSlot = this.region.querySelector("section.source.highlight slot[name='highlight']");
+                        // highlightSlot.innerHTML = newElement("code", {}, data.source).outerHTML;
+                    }
+                }
+                // Additional methods to manipulate the cell can be added here
+            }
+            function newElement(tag, attributes={}, ...children) {
+                const element = document.createElement(tag);
+                for (const [key, value] of Object.entries(attributes)) {
+                    element.setAttribute(key, value);
+                }
+                children.forEach(child => {
+                    if (typeof child === "string") {
+                        element.appendChild(document.createTextNode(child));
+                    } else {
+                        element.appendChild(child);
+                    }
+                });
+                return element;
+            }
+            function newElementsFromString(string) {
+                const template = newElement('template');
+                template.innerHTML = string.trim();
+                return template.content.childNodes;
+            }
+            const escapeHtml = unsafe => {
+                return unsafe
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;")
+                    .replaceAll("'", "&#039;");
+            };
+        
+            function updateAttachments(attachments, region) {
+                region.querySelectorAll("img[src^='attachment']").forEach(
+                    img => {
+                        const id = img.getAttribute("src").replace("attachment:", "");
+                        const mimes = attachments[id];
+                        for (const [key, value] of Object.entries(mimes)) {
+                            const base64 = ";base64"
+                            img.setAttribute("src", `data:${key}${base64},${value}`);
+                            break
+                        }
+                    }
+                )
+            }
+            class Output {
+                constructor(object) {
+                    this.region = object;
+                }
+                static from(object) {
+                    if (object.output_type) {
+                        // object is already an output object
+                        return Output.fromData(object);
+                    }
+                    return new Output(object.target || object);
+                }
+                static fromData(cell, data) {
+                    if (["execute_result", "display_data"].includes(data.output_type)) {
+                        return Output.fromDisplayData(cell, data);
+                    } else if (data.output_type == "stream") {
+                        return new Output(
+                            newElement("dl",
+                                {class: `output ${data.output_type}`},
+                                newElement("dt", {class: "stream"}, data.name),
+                                newElement("dd", 
+                                    {class: `stream ${data.name}`, "itemprop": data.name},
+                                    newElement("pre", newElement("code", {}, data.text.join(""))
+                                ))
+                            )
+                        )
+                    } else if (data.output_type == "error") {
+                        const traceback = data.traceback.map(
+                            line => newElement("dd", 
+                                {class: "traceback", "itemprop": "text/plain"},
+                                newElement("pre", {}, newElement("code", line))
+                            )
+                        );
+                        return new Output(
+                            newElement("dl",
+                                {class: `output ${data.output_type}`},
+                                newElement("dt", {class: `error ${data.output_type}`}, data.ename ),   
+                                newElement("dd", 
+                                    {},
+                                    newElement("pre", 
+                                        {}, newElement("code", {class: `evalue ${data.name}`, "itemprop": data.name}, data.evalue)
+                                    )
+                                ),
+                                ...traceback,
+                                
+                            )
+                        )
+        
+                    } else {
+                        //silentyly fail other output types
+                    }
+                }
+                static fromDisplayData(cell, data) {
+                    debugger
+                    const mimeBundle = data.data;
+                    const metadata = data.metadata;
+                    const dl = newElement('dl', {class: `output ${data.output_type}`});
+                    const xmlMimes = ["text/html", "image/svg+xml"];
+                    const processedMime = [...xmlMimes, "text/plain", "application/json+ipynb"];
+                    for (const mime of xmlMimes) {
+                        if (mimeBundle[mime]) {
+                            let body = mimeBundle[mime];
+                            if (body.join) {
+                                body = body.join("");
+                            } 
+                            dl.appendChild(newElement("dt", {class: `mime ${mime}`}, mime));
+                            dl.appendChild(
+                                newElement("dd", 
+                                    {class: `mime ${mime}`, "itemprop": mime},
+                                    ...newElementsFromString(body),
+                                )
+                            )
+                        }
+                    }
+                    if ("application/json+ipynb" in mimeBundle) {
+                        let body = mimeBundle["application/json+ipynb"];
+                        dl.appendChild(newElement("dt", {class: `mime application/json+ipynb`}, "application/json+ipynb"));
+                        const options = {class: `mime application/json+ipynb`, "itemprop": "application/json+ipynb"}
+                        const src = metadata["application/json+ipynb"].src;
+                        const target = newElement("script", options);
+                        const dd = newElement("dd", options, target);
+                        dl.appendChild(dd);
+                        if (src) {
+                            options.src = src;
+                            if (!target.textContent) {
+                                fetch(src).then(response => {
+                                    if (response.ok) {
+                                        return response.text()
+                                    }
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }).then(text => {
+                                    target.__data__ = JSON.parse(text);
+                                    const notebook = Notebook.fromData(target.__data__);
+                                    dd.appendChild(notebook.region);
+                                }).catch(error => {
+                                    console.error(error)
+                                    dd.appendChild(Output.fromData(newError(error)).region)
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (mimeBundle["text/markdown"]) {
+                        if (!mimeBundle["text/html"]) {
+                            let body = mimeBundle["text/markdown"];
+                            if (body.join) {
+                                body = body.join("");
+                            } 
+                            const dt = newElement("dt", {class: `mime text/markdown`}, "text/markdown")
+                            dl.appendChild(dt);
+                            processedMime.push("text/markdown")
+                            document.forms["text/markdown"].render(body).then((html) => {
+                                const dd =  newElement("dd", 
+                                    {class: `mime text/html`, "itemprop": "text/html"},
+                                    ...newElementsFromString(html),
+                                );
+                                dt.insertAdjacentElement("afterend", dd);
+                                Output.postUpdate(cell, dd)
+                            })
+                        }
+                    }
+                    if (mimeBundle["text/plain"]) {
+                        let body = mimeBundle["text/plain"];
+                        if (body.join) {
+                            body = body.join("");
+                        } 
+                        dl.appendChild(newElement("dt", {class: "mime text/plain"}, "text/plain"));
+                        dl.appendChild(
+                            newElement("dd",
+                                {class: "mime text/plain", "itemprop": "text/plain"}, 
+                                body
+                            )
+                        )
+                    }
+                    for (const mime in mimeBundle) {
+                        if (!processedMime.includes(mime)) {
+                            const target = [];
+                            let body = mimeBundle[mime];
+                            if (mime.startsWith("text")) {
+                                if (body.join) {
+                                    body = body.join("");
+                                }
+                            }
+                            if (mime.startsWith("application/json")) {
+                                target.push(newElement(
+                                    "script",
+                                    {type: mime},
+                                    JSON.stringify(body, null, 2)
+                                ))
+                            } else if (mime.startsWith("image/")) {
+                                if (body.join) {
+                                    body = body.join("");
+                                }   
+                                target.push(newElement(
+                                    "img", 
+                                    {
+                                        src: `data:${mime};base64,${body}`,
+                                        alt: metadata[mime]?.alt || "Image"
+                                    }
+                                ))
+                            } else {
+                                let type = mime;
+                                if (mime == "application/javascript") {
+                                    type = "module";
+                                }
+                                if (typeof body === "object") {
+                                    body = JSON.stringify(body, null, 2);
+                                }
+                                if (body.join) {
+                                    body = body.join("");
+                                }
+                                target.push(newElement(
+                                    "script",
+                                    {type: type},
+                                    body
+                                ))
+                            }
+                            dl.appendChild(newElement("dt", {class: `mime ${mime}`}, mime));
+                            dl.appendChild(
+                                newElement("dd", {class: `mime ${mime}`, "itemprop": mime}, ...target)
+                            )
+                        }
+                    }
+                    return new Output(dl)
+                }
+        
+                static postUpdate(cell, region) {
+                    const graphs = region.querySelectorAll(".language-mermaid")
+                    graphs.length && document.forms["text/mermaid"].run({nodes: graphs})
+                    cell.attachments && updateAttachments(cell.attachments, region)
+                    return this
+                }
+        
+        
+                // Additional methods to manipulate the output can be added here
+            }
+            class Runtime {
+                constructor(object) {
+                    if (typeof object === "string") {
+                        object = document.getElementById(object);
+                    }
+                    this.form = object || document.forms["text/plain"];
+                }
+                getRunner() {
+                    return this.form.__data__;
+                }
+                runCell(cell, input_type="") {
+                    const cellData = cell.getCellData();
+                    if (!input_type) {
+                        input_type = cellData.metadata.input_type;
+                    }
+        
+                    return this.getRunner()(cell, this).then(
+                        (outputs) => {
+                            cell.appendOutputs(cellData, ...outputs);
+                        }
+                    );
+                }
+            }
+            function onLoad() {
+                const queryParams = new URLSearchParams(window.location.search);
+                const sources = queryParams.getAll("source");
+                if (sources.length) {
+                    const nb = {
+                        cells: sources.map(
+                            (source) => {
+                                return {
+                                    source: source,
+                                    cell_type: "code",
+                                    metadata: {
+                                        input_type: "text/uri-list"
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    const notebook = Notebook.fromData(nb);
+                    const notebookSection = document.querySelector("section.nb");
+                    notebookSection.replaceWith(notebook.region);
+                    debugger
+                    notebook.getCells().forEach(cell => cell.runCell());
+                }
+            }
+            document.body.onload = onLoad;
+        </script>
     </body>
 </html>
 {% endmacro %}
@@ -580,849 +1468,3 @@
 {% else %}
     {{ notebook(nb, config) }}  
 {% endif %}
-
-<script>
-    var input_types = {{ all_input_types | tojson }};
-    function closest(object, selector) {
-        if (object.matches(selector)) {
-            return object
-        } 
-        var closest = object.closest(selector);
-        if (closest) {
-            return closest;
-        }
-    }
-    class Notebook {
-        constructor(object) {
-            if (!object) {
-                object = document.querySelector("section.nb");
-            }
-            if (typeof object === "string") {
-                object = document.getElementById(object);
-            }
-            this.region = closest(object, "section.nb");
-            this.form = this.region.querySelector("form.nb");
-        }
-        getFormData() {
-            return new FormData(this.form);
-        }
-        getCellsOrder () {
-            const formData = this.getFormData();
-            return formData.getAll("cells");
-        }
-        getCell(index) {
-            const cellId = this.getCellsOrder()[index];
-            return Cell.from(document.getElementById(cellId));
-        }
-        getCells () {
-            const parent = this;
-            return this.getCellsOrder().map(id => new Cell(id, parent));
-        }
-        getNotebookData() {
-            // generate a notebook object based on the nbformat schema for notebooks using the form data
-            const formData = this.getFormData();
-            const notebook = Object.fromEntries(formData.entries());
-            const {title, description, authors, ...metadata} = notebook;
-            notebook.metadata = metadata;
-            notebook.metadata.title = title;
-            notebook.metadata.description = description;
-            notebook.metadata.authors = formData.getAll("nb:metadata:authors").map(name => ({name}));
-            notebook.cells = this.getCells().map(cell => cell.getCellData());
-            return notebook;
-        }
-        static from(object) {
-            return new Notebook(object.target || object);
-        }
-        updateMetadata(nb) {
-            return this
-        }
-        updateNav() {
-            const ol = newElement("ol")
-            this.region.querySelectorAll("ol.cells > li.cell > section.cell").forEach(
-                (cell, i) => {
-                    console.log(i)
-                    const item = newElement("li", {class: "cell"}, newElement(
-                        "a", {
-                            href: "#" + cell.closest("li").getAttribute("id"),
-                        }, newElement("span", {}, "cell"), document.createTextNode((i + 1).toString())
-                    ));
-                    const headings = cell.querySelectorAll("details.outputs :not(dd[data-mime='application/json+ipynb']) :is(h1,h2,h3,h4,h5,h6)");
-                    ol.appendChild(item);
-                    if (headings.length) {
-                        const list = newElement("ol")
-                        item.append(list)
-                        headings.forEach(
-                            (heading) => {
-                                if (!heading.getAttribute("id")) {
-                                    heading.setAttribute("id", slugify(heading.textContent))
-                                }
-                                list.appendChild(newElement("li", {class: "h"}, newElement(
-                                    "a", {
-                                        href: `#${heading.getAttribute("id")}`
-                                    }, heading.textContent 
-                                )))        
-                            }
-                        )
-                    }
-                    
-                    
-                }
-            )
-            this.region.querySelector("ol.nav.headings").replaceChildren(...ol.children)
-        }
-        addCells(...cells) {
-            const cellsList = this.region.querySelector("ol.cells");
-            cells.map(
-                (cellData, i) => Cell.fromData(
-                    cellData, this, {parent_id: this.form.id, index: i, cells_length: cells.length}
-                )).forEach(cell => {
-                    cellsList.appendChild(cell.region.parentElement);
-                }
-            );
-
-            const diagrams = this.region.querySelectorAll("code.language-mermaid");
-            document.forms["text/mermaid"]
-            return this
-        }
-        static fromData(object) {
-            const nb = new Notebook(this.newTemplate());
-            const cellsList = nb.region.querySelector("ol.cells");
-            nb.updateMetadata(object)
-            nb.region.querySelector("[name=cells_length]").textContent = object.cells.length
-            nb.region.querySelector("ol.cells").setAttribute("aria-setsize", object.cells.length)
-            nb.addCells(...object.cells);
-            nb.updateNav(object)
-            return nb
-        }
-        static newTemplate() {
-            return document.getElementById("nb:template").content.cloneNode(true).querySelector("section.nb");
-        }
-
-        // Additional methods to manipulate the notebook can be added here
-    }
-    function slugify(input) {
-        if (!input)
-            return '';
-
-        // make lower case and trim
-        var slug = input.toLowerCase().trim();
-
-        // remove accents from charaters
-        slug = slug.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-
-        // replace invalid chars with spaces
-        slug = slug.replace(/[^a-z0-9\s-]/g, ' ').trim();
-
-        // replace multiple spaces or hyphens with a single hyphen
-        slug = slug.replace(/[\s-]+/g, '-');
-
-        return slug;
-    }
-    class Cell {
-        constructor(object, parent, index) {
-            if (typeof object === "string") {
-                object = document.getElementById(object);
-            }
-            this.region = closest(object, "li.cell").querySelector("section");
-            this.form = this.region.querySelector("form.metadata");
-            this.outputs = [];
-            this.parent = parent;
-            this.index = index;
-        }
-        getNotebook() {
-            return Notebook.from(this.region);
-        }
-        getCellData() {
-            // generate a cell object based on the nbformat schema for notebooks using the form data
-            const formData = this.getFormData();
-            const cell = Object.fromEntries(formData.entries());
-            const {source, cell_type, id, execution_count, ...metadata} = cell;
-            cell.metadata = metadata;
-            if (cell_type === "code") {
-                cell.execution_count = parseInt(execution_count) || null;
-                cell.outputs = this.getOutputs();
-            } else {
-                delete cell.execution_count;
-                // delete cell.outputs;
-            }
-            return cell
-        }
-        getOutputs() {
-            const outputsSection = this.region.querySelector("details.outputs ol.outputs");
-            const outputArticles = Array.from(outputsSection.querySelectorAll("li.output"));
-            const outputs = outputArticles.map(article => {
-                const output = Output.from(article);
-                // return output.getOutputData();
-            });
-            return outputs;
-        }
-        getFormData() {
-            return new FormData(this.form);
-        }
-        static from(object, parent) {
-            if (object.cell_type) {
-                return Cell.fromData(object, parent)
-            }
-            return new Cell(object.target || object, parent);
-        }
-        static newTemplate() {
-            return document.getElementById("cell:template").content.cloneNode(true).querySelector("section.cell");   
-        }
-        static fromData(object, parent, options={}) {
-            const cell = new Cell(this.newTemplate(), parent, options.index);
-            object.id ??= crypto.randomUUID();
-            if (object.cell_type == "markdown") {
-                object.outputs = [newOutput({"text/markdown": object.source})]
-            }
-            cell.updateCell(object, options);
-            return cell
-        }
-        changeInputType() {
-            const formData = this.getFormData();
-            const input_type = formData.get("input_type");
-            this.region.classList.remove(...Object.values(input_types));
-            this.region.classList.add(input_type);
-        }
-        runCell() {
-            const cellData = this.getCellData();
-            this.outputsList().innerHTML = "";
-            const promises = new Runtime(cellData.metadata.runtime).runCell(this);
-        }
-        outputsList() {
-            return this.region.querySelector("details.outputs ol.outputs")
-        }
-        appendOutputs(cell, ...outputs) {
-            const outputsSection = this.outputsList();
-            outputs.forEach(outputData => {
-                outputsSection.appendChild(newElement("li", {class: "output ${output.output_type}"}, Output.fromData(cell, outputData).region));
-            });
-            this.region.dataset.outputs = outputs.length;
-        }
-        updateCell(data, options = {}) {
-            // this.updateMetadata(data);
-            // this.updateExecutionCount(data);
-            this.region.querySelectorAll("form.cell [name=index]").forEach(
-                (index) => {
-                    index.textContent = options.index + 1;
-                }
-            )
-            this.region.querySelector("a.index").setAttribute("id", `cell:${options.index + 1}`)
-            this.region.querySelector("a.index").setAttribute("href", `#cell:${options.index + 1}`)
-            this.region.parentElement.setAttribute("pos-inset", data.index + 1)
-            this.region.parentElement.id = this.region.parentElement.id.replace("CELLID", data.id)
-
-            this.region.querySelector("[name=cells]").setAttribute("form", options.parent_id);  
-            this.form.setAttribute("id", data.id);
-            this.form.querySelector("[name=id]").value = data.id;
-            this.form.querySelector("[name=cells]").value = data.id;
-
-            this.form.execution_count.value = data.execution_count || -1;
-            this.region.querySelector("slot[name=execution_count]").textContent = this.form.execution_count.value;
-            this.region.dataset.executionCount = this.form.execution_count.value;
-            
-
-            const inputType = data.metadata.input_type || "text/html";
-            this.form.input_type.value = inputType;
-            this.updateSource(data);
-            // this.updateOutputs(data);
-            this.appendOutputs(data, ...data.outputs || []);
-            return this
-        }
-        updateSource(data) {
-            if ("source" in data) {
-                const sourceTextarea = this.region.querySelector("details.input textarea[name='source']");
-                let source = data.source;
-                if (source.join) {
-                    source = source.join("");
-                }
-                this.region.dataset.sloc = source.split("\n").filter(x => x.trim()).length
-                sourceTextarea.textContent = source;
-                sourceTextarea.rows = (source.split("\n").length || 0 ) + 1;
-                // const highlightSlot = this.region.querySelector("section.source.highlight slot[name='highlight']");
-                // highlightSlot.innerHTML = newElement("code", {}, data.source).outerHTML;
-            }
-        }
-        // Additional methods to manipulate the cell can be added here
-    }
-    function newElement(tag, attributes={}, ...children) {
-        const element = document.createElement(tag);
-        for (const [key, value] of Object.entries(attributes)) {
-            element.setAttribute(key, value);
-        }
-        children.forEach(child => {
-            if (typeof child === "string") {
-                element.appendChild(document.createTextNode(child));
-            } else {
-                element.appendChild(child);
-            }
-        });
-        return element;
-    }
-    function newElementsFromString(string) {
-        const template = newElement('template');
-        template.innerHTML = string.trim();
-        return template.content.childNodes;
-    }
-    const escapeHtml = unsafe => {
-        return unsafe
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    };
-
-    function updateAttachments(attachments, region) {
-        region.querySelectorAll("img[src^='attachment']").forEach(
-            img => {
-                const id = img.getAttribute("src").replace("attachment:", "");
-                const mimes = attachments[id];
-                for (const [key, value] of Object.entries(mimes)) {
-                    const base64 = ";base64"
-                    img.setAttribute("src", `data:${key}${base64},${value}`);
-                    break
-                }
-            }
-        )
-    }
-    class Output {
-        constructor(object) {
-            this.region = object;
-        }
-        static from(object) {
-            if (object.output_type) {
-                // object is already an output object
-                return Output.fromData(object);
-            }
-            return new Output(object.target || object);
-        }
-        static fromData(cell, data) {
-            if (["execute_result", "display_data"].includes(data.output_type)) {
-                return Output.fromDisplayData(cell, data);
-            } else if (data.output_type == "stream") {
-                return new Output(
-                    newElement("dl",
-                        {class: `output ${data.output_type}`},
-                        newElement("dt", {class: "stream"}, data.name),
-                        newElement("dd", 
-                            {class: `stream ${data.name}`, "data-mime": data.name},
-                            newElement("pre", newElement("code", {}, data.text.join(""))
-                        ))
-                    )
-                )
-            } else if (data.output_type == "error") {
-                const traceback = data.traceback.map(
-                    line => newElement("dd", 
-                        {class: "traceback", "data-mime": "text/plain"},
-                        newElement("pre", {}, newElement("code", line))
-                    )
-                );
-                return new Output(
-                    newElement("dl",
-                        {class: `output ${data.output_type}`},
-                        newElement("dt", {class: `error ${data.output_type}`}, data.ename ),   
-                        newElement("dd", 
-                            {},
-                            newElement("pre", 
-                                {}, newElement("code", {class: `evalue ${data.name}`, "data-mime": data.name}, data.evalue)
-                            )
-                        ),
-                        ...traceback,
-                        
-                    )
-                )
-
-            } else {
-                //silentyly fail other output types
-            }
-        }
-        static fromDisplayData(cell, data) {
-            debugger
-            const mimeBundle = data.data;
-            const metadata = data.metadata;
-            const dl = newElement('dl', {class: `output ${data.output_type}`});
-            const xmlMimes = ["text/html", "image/svg+xml"];
-            const processedMime = [...xmlMimes, "text/plain", "application/json+ipynb"];
-            for (const mime of xmlMimes) {
-                if (mimeBundle[mime]) {
-                    let body = mimeBundle[mime];
-                    if (body.join) {
-                        body = body.join("");
-                    } 
-                    dl.appendChild(newElement("dt", {class: `mime ${mime}`}, mime));
-                    dl.appendChild(
-                        newElement("dd", 
-                            {class: `mime ${mime}`, "data-mime": mime},
-                            ...newElementsFromString(body),
-                        )
-                    )
-                }
-            }
-            if ("application/json+ipynb" in mimeBundle) {
-                let body = mimeBundle["application/json+ipynb"];
-                dl.appendChild(newElement("dt", {class: `mime application/json+ipynb`}, "application/json+ipynb"));
-                const options = {class: `mime application/json+ipynb`, "data-mime": "application/json+ipynb"}
-                const src = metadata["application/json+ipynb"].src;
-                const target = newElement("script", options);
-                const dd = newElement("dd", options, target);
-                dl.appendChild(dd);
-                if (src) {
-                    options.src = src;
-                    if (!target.textContent) {
-                        fetch(src).then(response => {
-                            if (response.ok) {
-                                return response.text()
-                            }
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }).then(text => {
-                            target.__data__ = JSON.parse(text);
-                            const notebook = Notebook.fromData(target.__data__);
-                            dd.appendChild(notebook.region);
-                        }).catch(error => {
-                            console.error(error)
-                            dd.appendChild(Output.fromData(newError(error)).region)
-                        });
-                    }
-                }
-            }
-            
-            if (mimeBundle["text/markdown"]) {
-                if (!mimeBundle["text/html"]) {
-                    let body = mimeBundle["text/markdown"];
-                    if (body.join) {
-                        body = body.join("");
-                    } 
-                    const dt = newElement("dt", {class: `mime text/markdown`}, "text/markdown")
-                    dl.appendChild(dt);
-                    processedMime.push("text/markdown")
-                    document.forms["text/markdown"].render(body).then((html) => {
-                        const dd =  newElement("dd", 
-                            {class: `mime text/html`, "data-mime": "text/html"},
-                            ...newElementsFromString(html),
-                        );
-                        dt.insertAdjacentElement("afterend", dd);
-                        Output.postUpdate(cell, dd)
-                    })
-                }
-            }
-            if (mimeBundle["text/plain"]) {
-                let body = mimeBundle["text/plain"];
-                if (body.join) {
-                    body = body.join("");
-                } 
-                dl.appendChild(newElement("dt", {class: "mime text/plain"}, "text/plain"));
-                dl.appendChild(
-                    newElement("dd",
-                        {class: "mime text/plain", "data-mime": "text/plain"}, 
-                        body
-                    )
-                )
-            }
-            for (const mime in mimeBundle) {
-                if (!processedMime.includes(mime)) {
-                    const target = [];
-                    let body = mimeBundle[mime];
-                    if (mime.startsWith("text")) {
-                        if (body.join) {
-                            body = body.join("");
-                        }
-                    }
-                    if (mime.startsWith("application/json")) {
-                        target.push(newElement(
-                            "script",
-                            {type: mime},
-                            JSON.stringify(body, null, 2)
-                        ))
-                    } else if (mime.startsWith("image/")) {
-                        if (body.join) {
-                            body = body.join("");
-                        }   
-                        target.push(newElement(
-                            "img", 
-                            {
-                                src: `data:${mime};base64,${body}`,
-                                alt: metadata[mime]?.alt || "Image"
-                            }
-                        ))
-                    } else {
-                        let type = mime;
-                        if (mime == "application/javascript") {
-                            type = "module";
-                        }
-                        if (typeof body === "object") {
-                            body = JSON.stringify(body, null, 2);
-                        }
-                        if (body.join) {
-                            body = body.join("");
-                        }
-                        target.push(newElement(
-                            "script",
-                            {type: type},
-                            body
-                        ))
-                    }
-                    dl.appendChild(newElement("dt", {class: `mime ${mime}`}, mime));
-                    dl.appendChild(
-                        newElement("dd", {class: `mime ${mime}`, "data-mime": mime}, ...target)
-                    )
-                }
-            }
-            return new Output(dl)
-        }
-
-        static postUpdate(cell, region) {
-            const graphs = region.querySelectorAll(".language-mermaid")
-            graphs.length && document.forms["text/mermaid"].run({nodes: graphs})
-            cell.attachments && updateAttachments(cell.attachments, region)
-            return this
-        }
-
-
-        // Additional methods to manipulate the output can be added here
-    }
-    class Runtime {
-        constructor(object) {
-            if (typeof object === "string") {
-                object = document.getElementById(object);
-            }
-            this.form = object || document.forms["text/plain"];
-        }
-        getRunner() {
-            return this.form.__data__;
-        }
-        runCell(cell, input_type="") {
-            const cellData = cell.getCellData();
-            if (!input_type) {
-                input_type = cellData.metadata.input_type;
-            }
-
-            return this.getRunner()(cell, this).then(
-                (outputs) => {
-                    cell.appendOutputs(cellData, ...outputs);
-                }
-            );
-        }
-    }
-    function onLoad() {
-        const queryParams = new URLSearchParams(window.location.search);
-        const sources = queryParams.getAll("source");
-        if (sources.length) {
-            const nb = {
-                cells: sources.map(
-                    (source) => {
-                        return {
-                            source: source,
-                            cell_type: "code",
-                            metadata: {
-                                input_type: "text/uri-list"
-                            }
-                        }
-                    }
-                )
-            }
-            const notebook = Notebook.fromData(nb);
-            const notebookSection = document.querySelector("section.nb");
-            notebookSection.replaceWith(notebook.region);
-            debugger
-            notebook.getCells().forEach(cell => cell.runCell());
-        }
-    }
-    document.body.onload = onLoad;
-</script>
-<style class="core">
-    :root {
-        --width: 100%;
-    }
-    :not(.wide) {
-        img {
-            max-width: 100%;
-        }
-    }
-    .wide {
-        overflow-x: auto;
-        section.nb {
-            width: max-content;
-            min-width: 100%;
-
-            section.cell {
-                width: max-content;
-                min-width: 100%;
-                textarea[name="source"] {
-                    resize: both;
-                }
-            }
-        }        
-    }
-    .flex {
-        display: flex;
-        &.row {
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-        &.column {
-            flex-direction: column;
-        }
-    }
-    body {
-        overflow-x: none;
-        li.output {
-            overflow-x: auto;
-        }
-    }
-    [readonly] {
-        border: none;
-        font-family: inherit;
-        font-size: inherit;
-        padding: unset;
-        width: auto;
-        input&, select& {
-            display: inline;
-        }
-        &[tabindex="-1"]:not(textarea[name=source]) {
-            pointer-events: none;
-        }  
-    }
-    section.nb[data-highlight-theme=""] {
-        section.highlight {
-            display: none;
-        }
-    }
-    section.cell {
-        fieldset[name="files"] {
-            display: none;
-        }
-        &.application\/octet-stream {
-            fieldset[name="files"] {
-                display: block;
-                width: 100%;
-                box-sizing: border-box;
-            }
-            textarea[name="source"] {
-                display: none;
-
-            }
-        }
-    }
-    summary.execution_count {
-        width: fit-content;
-    }
-    details.activity:not([open]) + table.activity,
-    .nv:not(:focus-within):not(:active), 
-    .non-visual:not(:focus-within):not(:active), 
-    .sr-only:not(:focus-within):not(:active) {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        border: 0;
-    }
-    textarea[name=source] {
-        font-family: monospace;
-        font-size: 1em;
-        width: 100%;
-        resize: vertical;
-    }
-    menu[role="toolbar"], header>menu {
-        display: flex;
-        width: var(--width);
-        flex-wrap: wrap;
-        flex-direction: row;
-        list-style: none; 
-        padding-left: unset;
-        & > li:not(:last-of-type) {
-            margin-bottom: 1em;
-            margin-right: 1em;
-        }
-    }
-    ol.cells, ol.outputs, ol.output {
-        list-style: none;
-        padding-left: unset;
-    }
-    details.outputs :is(h1, h2, h3, h4, h5, h6) {
-        display: inline-block
-    }
-    a.h {
-        margin-right: 1em;
-    }
-    details.outputs label.mime {
-        display: none;
-    }
-    nav.cells dl.nav {
-        &:not(.headings) dd, &:not(.cells) dt {
-            display: none;
-        }
-    }
-    details.site[data-entries="0"] {
-        display: none;
-    }
-    dl.output, dl.summary{
-        &>dd, &>dt {
-            margin-left: 1rem;
-        }
-    }
-    form.nb, details.input, details.outputs {
-        &>* {
-            margin: 1em;
-        }
-    }
-</style>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-html {
-    font-family: "Atkinson Hyperlegible";
-}
-:root {
-    --focus: 3px;
-}
-section.nb:focus-visible,
-section.cell:focus-visible,
-:focus-visible {
-    outline: var(--focus) solid;
-    box-shadow: 0 0 0 calc(2 * var(--focus));
-    
-}
-section.cell:focus-within {
-    outline-style: dashed;
-}
-section.nb:focus-within, section.nb form.nb.metadata:focus-within {
-    outline-style: dotted;
-}
-</style>
-<style class="display_data">
-    script[type="text/markdown"] {
-        display: block;
-    }
-</style>
-<style class="modes">
-    section.read-mode:not(.run-mode):not(.edit-mode),
-    section.nb:not(.run-mode):not(.edit-mode) {
-        form.nb, section.cell {
-            .run-only, .edit-only {
-                display: none;
-            }
-            &.text\/markdown {
-                form.cell {
-                    display: none;
-                }
-            }
-        }
-        section.cell[data-sloc="0"] {
-            details.input:first-of-type {
-                display: none;
-            }
-        }
-        section.cell[data-outputs="0"] {
-            details.outputs:first-of-type {
-                display: none;
-            }
-        }
-    }
-    section.nb:not(.edit-mode),
-    section.nb.run-mode:not(.edit-mode) {
-        form.nb, section.cell {
-            .edit-only {
-                display: none;
-            }   
-        }
-    }
-    .select-only {
-        display: none;
-    }
-    input[name=current]:not(:focus):not(:checked) {
-        opacity: 0;
-    }
-    li.empty {
-        display: none;
-        & ~ :not(dt) {
-            display: none;
-        }
-    }
-    li[data-authors="0"] {
-        display: none;
-        & ~ :not(dt) {
-            display: none;
-        }
-    }
-    dd.statistics>* {
-        margin-right: 1em;
-    }
-    dl.layout > dt {
-        display: none;
-    }
-    section.nb.no-source form.cell {
-        display: none;
-    }
-    section.nb.no-outputs details.outputs {
-        display: none;
-    }
-    section.nb.no-metadata {
-        form.nb {
-            display: none;
-        }
-    }
-    section.cell {
-        grid-template-rows: auto auto auto;
-        grid-template-columns: auto auto;
-        form.cell {
-            grid-template-columns: subgrid;
-            grid-template-rows: subgrid;
-            &>menu  {
-                grid-area: label;
-            }
-            &>details.source {
-                grid-area: source;
-            }
-        }
-        &>details.outputs {
-            grid-area: outputs;
-        }
-    }
-    
-    section.nb.out-in {
-        section.cell {
-            display: grid;
-            form.cell {
-                display: grid;
-                &>menu  {
-                    grid-row: 1/2;
-                    grid-column: 1/3;
-                }
-                &>details.input {
-                    grid-row: 3/4;
-                    grid-column: 1/3;
-                }
-            }
-            &>details.outputs {
-                grid-row: 2/3;
-                grid-column: 1/3;
-            }
-        }
-    }
-    ol.output {
-        & li[data-mime="text/html"] ~ * {
-            display: none;
-        }
-        & li[data-mime="text/markdown"] ~ * {
-            display: none;
-        }
-    }
-
-    section.cell[data-execution-count="-1"] > form > details.input > summary.execution_count,
-    section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count {
-        & > [name=execution_count] {
-            display: none;
-        }
-    }
-    section.cell[data-execution-count="-1"] > form > details.input > summary.execution_count::before {
-        content: "input";
-    }
-    section.cell[data-execution-count="-1"] > details.outputs > summary.execution_count::before {
-        content: "output";
-    }
-    ol.nav.headings li.cell > a {
-        display: none;
-    }
-</style>
