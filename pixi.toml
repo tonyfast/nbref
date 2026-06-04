@@ -55,6 +55,9 @@ flit = ">=3.11.0,<4"
 pip = ">=25.3,<26"
 anyio = ">=4.12.1,<5"
 
+[pypi-dependencies]
+flit = ">=3.12.0, <4"
+
 [feature.js.tasks]
 install = "npm install"
 install-browser = "npx browser-driver-manager install chrome"

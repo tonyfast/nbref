@@ -1,0 +1,16 @@
+allOf:
+- $ref: https://json-schema.org/draft/2020-12/schema
+- $ref: https://www.schemastore.org/jsonld.json
+properties:
+    class:
+        type: array
+    data:
+        type: object
+    item:
+        type: object
+    aria:
+        type: object
+    role:
+        type: string
+    attrs:
+        type: object
