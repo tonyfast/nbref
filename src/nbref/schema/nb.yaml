@@ -1,0 +1,105 @@
+type: object
+readOnly: true
+# $id: https://deathbeds.github.io/nbref/schema/nb.jsonschema
+$ref: "#/$defs/nb"
+contentMediaType: application/ipynb+json
+$defs:
+    mimetypes:
+        # the mimetypes should be dynamically extensible
+        properties:
+            text/plain:
+                type: string
+                contentMediaType: text/plain
+            text/markdown:
+                type: string
+                format: textarea
+                readOnly: true
+                contentMediaType: text/markdown
+            text/html:
+                type: string
+                contentMediaType: text/html
+            image/png:
+                contentMediaType: image/png
+            image/jpeg:
+                contentMediaType: image/jpeg  
+            image/svg+xml:
+                contentMediaType: image/svg+xml
+            application/javascript:
+                contentMediaType: application/javascript
+            application/json:
+                contentMediaType: application/json
+            application/x-ipynb+json:
+                contentMediaType: application/x-ipynb+json
+            application/ipynb+json:
+                $ref: "#"
+    metadata:
+        role: dialog
+        type: object
+        properties:
+            title: 
+                type: string
+                "@type": dcterms:title 
+            description: 
+                type: string
+                "@type": dcterms:description
+    nb:
+        required: [cells, metadata]
+        properties:
+            metadata: 
+                $ref: "#/$defs/metadata"
+                properties:
+                    kernelspec: 
+                        type: object
+                    language_info:
+                        type: object
+                        properties:
+                            codemirror_mode:
+                                type: object
+            cells:
+                type: array
+                items:
+                    required: [cell, id, execution_count, cell_type, source, outputs]
+                    properties:
+                        cell:
+                            type: integer
+                        id: 
+                            type: string
+                            class: [hidden]
+                            "@type": "@id"
+                        cell_type:
+                            type: string
+                            enum: [code, markdown, raw, file]
+                        execution_count:
+                            type: integer
+                            if:
+                                type: null
+                            then:
+                                default: -1
+                        source:
+                            type: string
+                            format: textarea
+                            role: details
+                            style:
+                                width: 100%
+                        metadata: 
+                            role: dialog
+                            $ref: "#/$defs/metadata"
+                        outputs:
+                            type: array
+                            readOnly: true
+                            items:
+                                type: object
+                                required: [output_type]
+                                properties:
+                                    output_type: 
+                                        type: string
+                                    data:
+                                        $ref: "#/$defs/mimetypes"
+                                    traceback:
+                                        type: string
+                                        format: ascii
+                                    text:
+                                        type: string
+                                        format: ascii
+                                    metadata:
+                                        type: object

@@ -1,42 +1,48 @@
-
 from abc import ABC
 import builtins
 import collections
-from functools import partial, wraps
+from curses import meta
+from dataclasses import dataclass
+from functools import partial, singledispatch, wraps
 import itertools
 import json
 from operator import add, getitem, methodcaller
 import re
 from token import OP
-from zipfile import Path
 from bs4 import Tag
 from typing import IO, Generator
 
 
 DICT_TYPES = dict, collections.ChainMap
 
-def schema_type_to_path_types(value):
-    """convert a json schema into a python type from the standard library."""
+# def schema_type_to_path_types(value):
+#     """convert a json schema into a python type from the standard library."""
 
-    if "object" in value:
-        return Dict
-    elif "array" in value:
-        return Array
-    elif "string" in value:
-        return String
-    elif "null" in value:
-        return Null
+#     if "object" in value:
+#         return Dict
+#     elif "array" in value:
+#         return Array
+#     elif "string" in value:
+#         return String
+#     elif "null" in value:
+#         return Null
     
-    elif "integer" in value:
-        return Integer
-    elif "number" in value:
-        return Number
-    elif "boolean" in value:
-        return Boolean
-    elif "enum" in value:
-        return String
-    return Null
-    raise TypeError(f"Unsupported type: {value}")
+#     elif "integer" in value:
+#         return Integer
+#     elif "number" in value:
+#         return Number
+#     elif "boolean" in value:
+#         return Boolean
+#     elif "enum" in value:
+#         return String
+#     return Null
+#     raise TypeError(f"Unsupported type: {value}")
+
+
+@singledispatch
+def dispatch(value):
+    raise TypeError(f"Unsupported type: {type(value)}")
+
 
 def python_type_to_schema(value):
     if isinstance(value, DICT_TYPES):
@@ -56,35 +62,15 @@ def python_type_to_schema(value):
     return "null"
     raise TypeError(f"Unsupported type: {type(value)}")
 
-class UNDEFINED:
-    def __contains__(self, item):
-        return False
+# class UNDEFINED:
+#     def __contains__(self, item):
+#         return False
     
-UNDEFINED = None
+# UNDEFINED = None
 
-def dispatch(value):
-    from .schemas import Schema
-    if isinstance(value, (Object, Schema)):
-        return value
-    if isinstance(value, (dict,)):
-        return Dict(value)
-    elif isinstance(value, (list, tuple)):
-        return Array(value)
-    elif isinstance(value, str):
-        return String(value)
-    elif isinstance(value, bool):
-        return Boolean(value)
-    elif value is None:
-        return 
-    elif isinstance(value, int):
-        return Integer(value)
-    elif isinstance(value, float):
-        return Number(value)
-    elif isinstance(value, Null):
-        return value
-    raise TypeError(f"Unsupported type: {type(value)}")
 
 class Pointer(list):
+    """a list of a pointer to an object in a json document."""
     def __add__(self, value):
         return type(self)(super().__add__(value))
     
@@ -105,18 +91,28 @@ class Pointer(list):
         from jsonpointer import JsonPointer
         return str(JsonPointer.from_parts(self + list(key))).lstrip("/")
 
+# in schema operation it is important to know where an
+# object is in the type and name space.
 class HasPath:
     def __init__(self, *args, **kwargs):
-        self.parent = getattr(self, "parent", None)
-        self.root = getattr(self, "root", self)
-        self.path = getattr(self, "path", Pointer("#"))
-        self.name = getattr(self, "name", getattr(self.parent, "name", None))
+        # self.parent = getattr(self, "parent", None)
+        # self.path = getattr(self, "path", Pointer("#"))
+        # self.name = getattr(self, "name", getattr(self.parent, "name", None))
         # the schema probably isnt set yet so this does little good
+        self.root = self
+        self.path = getattr(self, "path", Pointer("#"))
+        self.name = None
         if isinstance(self, (dict, collections.ChainMap, list)):
             super().__init__(*args, **kwargs)
         else:
             super().__init__()
 
+        if args and isinstance(args[0], Object):
+            args[0].reflect(self)
+        
+        # self.root = getattr(self, "root", self)
+        
+        
     def set_name(self, name=None):
         if name is None:
             # set the naem from the schema
@@ -154,12 +150,13 @@ class HasPath:
             object.set_root(self.root)
             object.set_parent(self)
         object.set_path(self.path + list(key))
-        if object.name is None:
-            object.set_name(self.name)
+        # if object.name is None:
+        #     object.set_name(self.name)
         if key:
-            property = Schema.property(self.schema, *key) if self.schema is not None else None
-            if property:
-                object.set_schema(property)
+            if self.schema:
+                property = Schema.property(self.schema, *key) 
+                if property:
+                    object.set_schema(property)
         return object
 
     # need to iunfer namespace
@@ -192,15 +189,24 @@ class HasSchema:
             self.schema = None
         super().__init__(*args, **kwargs)
     
-    def set_schema(self, schema):
+    def set_schema(self, *schema, **kwargs):
         from .schemas import Schema
-        if self.schema is None:
-            self.schema = Schema()
         if not self.schema:
-            if not isinstance(schema, Schema):
-                schema = Schema(schema)
-            self.schema = schema
+            if not kwargs and len(schema) == 1 and isinstance(schema[0], Schema):
+                self.schema = schema[0]
+            else:
+                self.schema = Schema(*schema, **kwargs)
         return self
+    
+    def modify_schema(self, *schema, **kwargs):
+        from .schemas import Schema
+        if self.schema:
+            self.schema = Schema(*schema, *self.schema.maps, **kwargs)
+        else:
+            self.set_schema(*schema, **kwargs)
+        return self
+    
+    modify = modify_schema
     
     def errors(self):
         if self.schema:
@@ -211,13 +217,21 @@ class HasSchema:
     def validate(self, raises=True):
         if self.schema:
             from .schemas import Schema
-            Schema(self.schema).validate(self, raises=raises)
+            Schema(self.schema).validate_object(self, raises=raises)
             return self
+        return self
+    
+    def warn(self):
+        try:
+            self.validate(raises=True)
+        except Exception as e:
+            import warnings
+            warnings.warn(str(e))
         return self
     
     def infer_schema(self):
         from .schemas import Schema
-        self.set_schema(Schema.from_objects(self))
+        self.schema = Schema.infer(self)
         return self
     
 class HasRepr(HasSchema):
@@ -314,7 +328,7 @@ class Object(HasRepr, HasPath):
         json.int = Integer
         json.bool = Boolean
         if isinstance(self, Object):
-            if isinstance(self, collections.ChainMap):
+            if isinstance(self, (collections.ChainMap, dict, list)):
                 self = self.builtin()
         try:
             return json.dumps(self, indent=4).strip('"')
@@ -358,31 +372,38 @@ class Object(HasRepr, HasPath):
         self._id = id
         return self
         
+    # @classmethod
+    # def dispatch(cls, value):
+    #     from .schemas import Schema
+    #     if isinstance(value, (Object, Schema)):
+    #         return value
+    #     if isinstance(value, (dict,)):
+    #         object = Dict(value)
+    #         if issubclass(cls, Schema):
+    #             return cls(object)
+    #         return object
+    #     elif isinstance(value, (list, tuple)):
+    #         return Array(value)
+    #     elif isinstance(value, str):
+    #         return String(value)
+    #     elif isinstance(value, bool):
+    #         return Boolean(value)
+    #     elif value is None:
+    #         return 
+    #     elif isinstance(value, int):
+    #         return Integer(value)
+    #     elif isinstance(value, float):
+    #         return Number(value)
+    #     elif isinstance(value, Null):
+    #         return value
+    #     raise TypeError(f"Unsupported type: {type(value)}")
+    dispatcher = dispatch
+    
     @classmethod
     def dispatch(cls, value):
-        from .schemas import Schema
-        if isinstance(value, (Object, Schema)):
+        if isinstance(value, cls):
             return value
-        if isinstance(value, (dict,)):
-            object = Dict(value)
-            if issubclass(cls, Schema):
-                return cls(object)
-            return object
-        elif isinstance(value, (list, tuple)):
-            return Array(value)
-        elif isinstance(value, str):
-            return String(value)
-        elif isinstance(value, bool):
-            return Boolean(value)
-        elif value is None:
-            return 
-        elif isinstance(value, int):
-            return Integer(value)
-        elif isinstance(value, float):
-            return Number(value)
-        elif isinstance(value, Null):
-            return value
-        raise TypeError(f"Unsupported type: {type(value)}")
+        return cls.dispatcher(value)
 
     def pipe(self, func, *args, **kwargs):
         return func(self, *args, **kwargs)
@@ -457,7 +478,6 @@ class Dict(Object, dict):
             # return Getter.get_pointer(self, key)
         value = Dict.__getitem_native__(self, key)
         # is_schema = isinstance(self.root, Schema)
-
         object = Object.dispatch(value)
         if object is not None:
             self.reflect(object, key)
@@ -465,10 +485,9 @@ class Dict(Object, dict):
             # if object.root is object:
             #     object.set_root(self.root)
             # object.set_path(self.path + [key])
-
-            # if self.schema:
-            #     from .schemas import Schema
-            #     object.set_schema(Schema.property(self.schema, key))
+            if self.schema:
+                from .schemas import Schema
+                object.schema = Schema.property(self.schema, key)
         return object
     
     # def properties(self):
@@ -487,108 +506,6 @@ class Dict(Object, dict):
             (key, value.builtin() if hasattr(value, "builtin") else value) for key, value in self.items()
         )
 
-class Dicts(Object, collections.ChainMap):
-    python_type = dict
-
-    def __init_map(self, map):
-        return Object.dispatch(map)
-
-    def builtin(self) -> dict:
-        """an builtin python dict that merges the content as this object, but without the path and schema information."""
-        object = dict()
-        for map in self.maps:
-            for key, value in map.items():
-                if key in object:
-                    if isinstance(object[key], (dict, collections.ChainMap)):
-                        object[key].update(value.builtin() if hasattr(value, "builtin") else value)
-                    else:
-                        continue
-                else:
-                    object[key] = value.builtin() if hasattr(value, "builtin") else value
-        return object
-    
-    # def dict(self):
-    #     if isinstance(self, collections.ChainMap):
-    #         object = dict.fromkeys(list(self))
-    #         for map in self.maps:
-    #             object.update(map)
-    #         return object
-    #     return self
-    
-    
-    def all(self, key, default=BaseException):
-        # in theory only schemas should be chainmaps.
-        from .schemas import Schema
-
-        if isinstance(self, collections.ChainMap):
-            try:
-                object = collections.ChainMap.__getitem__(self, key)
-            except () if default is BaseException else KeyError:
-                return default
-            if isinstance(object, (dict, collections.ChainMap)):
-                object = self.reflect(self.all_dicts(key), key)
-                # object = self.all_dicts(key).set_root(self.root).set_parent(self).set_path(self.path + [key])
-        else:
-            try:
-                object = self[key]
-            except () if default is BaseException else KeyError:
-                return default
-            
-            if not isinstance(object, Schema):
-                # why is this here? i think schemas are the only thing that make sense to have a dictionary mapping.
-                # this wont be consistent more generally.
-                object = self.reflect(Schema(object), key)
-                # object = Schema(object).set_root(self.root).set_parent(self).set_path(self.path + [key])
-
-        # if self.schema:
-        #     object.set_schema(Schema.property(self.schema, key))
-        return object
-    
-    def all_strings(self, key):
-        if isinstance(self, collections.ChainMap):
-            lines = Array()
-            if self.schema:
-                lines.set_schema(self.set_schema(self.schema))
-            for i in range(len(self.maps)):
-                map = self.maps[i]
-                if key in map:
-                    lines.append(map[key])
-        else:
-            lines = [self[key]] if key in self else []
-        return self.reflect(Array(lines), key)
-
-    def all_dicts(self, key):
-        from .schemas import Schema
-        values = []
-        for i in range(len(self.maps)):
-            map = self.maps[i]
-            if key in map:
-                # agtain this assumes taht only schemas can be chained maps.
-                values.append(self.reflect(Schema(map[key]), key).expand())
-        return self.reflect(Schema(*values), key)
-    
-    __truediv__ = __getitem__ = all
-
-    def append(self, schema):   
-        self.maps += self.__init_map(schema),
-        if not self.maps[-1].schema:
-            self.maps[-1].set_schema(self.schema)
-        return self
-    
-    def extend(self, schema):
-        for s in schema:
-            self.append(s)
-        return self
-    
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
-        
-    # def dumps(self):
-    #     return Object.dumps(self.builtin())
-    
 class Array(Object, list):
     __getitem__ = Dict.__getitem__
 
@@ -622,7 +539,7 @@ class Uri(String):
         import urllib.parse
         return urllib.parse.urlparse(self)
     
-class Ref(String):
+class Registry:
     import referencing, jsonschema_specifications
     _cached_schema = {}
     
@@ -644,24 +561,88 @@ class Ref(String):
 
     del referencing, jsonschema_specifications
 
+    @classmethod
+    def register_schema(cls, schema, id=None):
+        if id is None:
+            id = schema.get("$id", None)
+        import referencing
+        if id in cls.REGISTRY:
+            return cls
+        cls.REGISTRY = cls.REGISTRY.combine(referencing.Registry({
+            id: referencing.Resource.from_contents(schema, Ref.default_specification)
+        }))
+        return cls
     
+    @classmethod
+    def crawl(cls):
+        cls.REGISTRY.crawl()
+        return cls
+        
+
+    
+class Ref(String, Registry):
+    @dataclass
+    class Reference:
+        contents: dict
+
     def resolver(self, root=None):
         import referencing
+        from .schemas import Schema
+        
         if root is None:
             # the root will usually be passed from an outer scope
-            root = self.root
+            if self.root is not self:
+                root = self.root
         if isinstance(root, str):
             # when the root is a string we have a uri referencing a schema and not root yet.
-            return Ref.REGISTRY.resolver(self)
+            return Ref.REGISTRY.resolver(self).lookup
+        parts = Ref.parse(self)
+        if parts.scheme == "file":
+            from pathlib import Path
+            from toolz import compose_left
+            from toolz.curried import flip
+
+            return compose_left(
+                flip(str.removeprefix, "file://"), Path, Path.expanduser, Path.read_text, 
+                Object.from_string, Ref.Reference)
+        elif parts.scheme in ("http", "https"):
+            return Ref.retrieve
+        elif not parts.scheme and not parts.path and parts.fragment and parts.fragment.startswith("/"):
+            resource = referencing.Resource.from_contents(root, self.default_specification)
+            return referencing._core.Resolver("", referencing._core.Registry().with_resource("", resource)).lookup
+            refer
+            return referencing._core.Resolver(resource.id(), Schema.Ref.REGISTRY.with_resource(
+                resource.id() or "", resource
+            ), referencing._core.List([
+                "https://json-schema.org/draft/2020-12/schema"
+            ])).lookup
+        elif self == "#":
+            return lambda x: Ref.Reference(self.root)
+        
+        if isinstance(root, str):
+            # when the root is a string we have a uri referencing a schema and not root yet.
+            return Ref.REGISTRY.resolver(self).lookup
         # the scoped root is used to deference $ref $dynamicRef in the current schema
-        return Ref.REGISTRY.resolver_with_root(referencing.Resource.from_contents(root, self.default_specification))
+        resolver = Ref.REGISTRY.resolver_with_root(referencing.Resource.from_contents(root, self.default_specification))
+        resource = referencing.Resource.from_contents(root, self.default_specification)
+        return referencing._core.Resolver(resource.id(), Schema.Ref.REGISTRY.with_resource(
+            resource.id() or "", resource
+        ), referencing._core.List([
+            "https://json-schema.org/draft/2020-12/schema"
+        ])).lookup
+
+        return Ref.REGISTRY.resolver_with_root(referencing.Resource.from_contents(root, self.default_specification)).lookup
     
     def resolve(self, root=None):
         # the root is passed by an expansion function
         from .schemas import Schema
-        subschema = Schema.dispatch(Ref.resolver(self, root).lookup(str.__str__(self)).contents)
+        subschema = Object.dispatch(Ref.resolver(self, root)(self).contents)
 
         return subschema
+    
+    def parse(self):
+        import urllib.parse
+        return urllib.parse.urlparse(str(self))
 
 # class Core:
 #     def id(self, *ids):
@@ -682,3 +663,35 @@ class Null(Object):
 
 # it doesnt seem to make sense to put raw strings in an output in the web beacuse of a lack of context.
 # the formatter can use @type, contentMediaType, and format to determine how to render a string.
+
+@dispatch.register(Object)
+def dispatch_object(value):
+    return value
+@dispatch.register(dict)
+def dispatch_dict(value):
+    return Dict(value)
+
+@dispatch.register(list)
+@dispatch.register(tuple)
+def dispatch_list(value):
+    return Array(value)
+
+@dispatch.register(str)
+def dispatch_str(value):
+    return String(value)
+
+@dispatch.register(bool)
+def dispatch_bool(value):
+    return Boolean(value)
+
+@dispatch.register(type(None))
+def dispatch_none(value):
+    return None
+
+@dispatch.register(int)
+def dispatch_int(value):
+    return Integer(value)
+
+@dispatch.register(float)
+def dispatch_float(value):
+    return Number(value)

@@ -1,0 +1,19 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://deathbeds.github.io/nbref/schemas/attributes.json
+title: attributes for html representations
+properties:
+    class:
+        type: array
+    data:
+        type: object
+    item:
+        type: object
+    aria:
+        type: object
+    role:
+        type: string
+    attrs:
+        type: object
+
+$comments: |
+    the schema describes the visual and nonvisual components of an object in space.

@@ -146,3 +146,17 @@ def infer_schema(*objects):
     for object in objects:
         builder.add_object(Object.builtin(object))
     return builder.to_schema()
+    
+def iter_values(object, path=None):
+    from nbref import Schema
+    if path is None:
+        path = []
+    if isinstance(object, dict):
+        for key, value in object.items():
+            yield value
+            yield from iter_values(value, path + [key])
+    elif isinstance(object, list):
+        yield object
+        yield from (iter_values(x, path + [i]) for i, x in enumerate(object))
+    else:
+        yield object

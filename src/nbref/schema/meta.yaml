@@ -4,11 +4,6 @@ allOf:
 properties:
     class:
         type: array
-    tags:
-        type: array
-        $comment: |
-            tags are preferred over class because class is reserved in languages.
-            this leaves us to avoid using reserved words generally.
     data:
         type: object
     item:
@@ -17,9 +12,5 @@ properties:
         type: object
     role:
         type: string
-        dependentSchemas:
-            children:
-                type: array
     attrs:
         type: object
-    

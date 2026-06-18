@@ -1,0 +1,4 @@
+allOf:
+- $ref: https://json-schema.org/draft/2020-12/schema
+- $ref: https://www.schemastore.org/jsonld.json
+- $ref: file://./meta.yaml
