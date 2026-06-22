@@ -1,46 +1,18 @@
 from abc import ABC
-import builtins
 import collections
 from curses import meta
 from dataclasses import dataclass
 from functools import partial, singledispatch, wraps
-import itertools
-import json
-from operator import add, getitem, methodcaller
+from operator import add, ge, getitem, methodcaller
 import re
-from token import OP
-from bs4 import Tag
-from typing import IO, Generator
 
 
 DICT_TYPES = dict, collections.ChainMap
 
-# def schema_type_to_path_types(value):
-#     """convert a json schema into a python type from the standard library."""
-
-#     if "object" in value:
-#         return Dict
-#     elif "array" in value:
-#         return Array
-#     elif "string" in value:
-#         return String
-#     elif "null" in value:
-#         return Null
-    
-#     elif "integer" in value:
-#         return Integer
-#     elif "number" in value:
-#         return Number
-#     elif "boolean" in value:
-#         return Boolean
-#     elif "enum" in value:
-#         return String
-#     return Null
-#     raise TypeError(f"Unsupported type: {value}")
-
-
 @singledispatch
 def dispatch(value):
+    if value is Expanded:
+        return value
     raise TypeError(f"Unsupported type: {type(value)}")
 
 
@@ -62,11 +34,6 @@ def python_type_to_schema(value):
     return "null"
     raise TypeError(f"Unsupported type: {type(value)}")
 
-# class UNDEFINED:
-#     def __contains__(self, item):
-#         return False
-    
-# UNDEFINED = None
 
 
 class Pointer(list):
@@ -106,9 +73,10 @@ class HasPath:
             super().__init__(*args, **kwargs)
         else:
             super().__init__()
-
+        
         if args and isinstance(args[0], Object):
             args[0].reflect(self)
+        
         
         # self.root = getattr(self, "root", self)
         
@@ -146,9 +114,9 @@ class HasPath:
     
     def reflect(self, object, *key):
         from .schemas import Schema
-        if object.root is object:
-            object.set_root(self.root)
-            object.set_parent(self)
+        # if object.root is object:
+        object.set_root(self.root)
+        object.set_parent(self)
         object.set_path(self.path + list(key))
         # if object.name is None:
         #     object.set_name(self.name)
@@ -157,6 +125,9 @@ class HasPath:
                 property = Schema.property(self.schema, *key) 
                 if property:
                     object.set_schema(property)
+
+        if len(object.path) == 1:
+            object.set_root(object)
         return object
 
     # need to iunfer namespace
@@ -189,6 +160,10 @@ class HasSchema:
             self.schema = None
         super().__init__(*args, **kwargs)
     
+    def force_schema(self, *schema, **kwargs):
+        from .schemas import Schema
+        self.schema = Schema(*schema, **kwargs)
+        return self
     def set_schema(self, *schema, **kwargs):
         from .schemas import Schema
         if not self.schema:
@@ -433,6 +408,9 @@ def guess_mimetype(string):
     else:
         return "text/plain"
 
+class Expanded:
+    pass
+
 class Dict(Object, dict):
     python_type = dict
 
@@ -479,15 +457,16 @@ class Dict(Object, dict):
         value = Dict.__getitem_native__(self, key)
         # is_schema = isinstance(self.root, Schema)
         object = Object.dispatch(value)
-        if object is not None:
-            self.reflect(object, key)
-            # object.set_parent(self)
-            # if object.root is object:
-            #     object.set_root(self.root)
-            # object.set_path(self.path + [key])
+        if object is not None and object is not Expanded:
+            # self.reflect(object, key)
+            object.set_parent(self)
+            if object.root is object:
+                object.set_root(self.root)
+            object.set_path(self.path + [key])
             if self.schema:
                 from .schemas import Schema
                 object.schema = Schema.property(self.schema, key)
+                # object.schema = Schema.property(self.schema, key, value)
         return object
     
     # def properties(self):
@@ -502,6 +481,19 @@ class Dict(Object, dict):
 
     def builtin(self) -> dict:
         """return a builtin python dict with the same content as this object, but without the path and schema information."""
+        object = dict.fromkeys(self)
+        blocked = set()
+        # print(object)
+        for key in list(object):
+            value = self[key]
+            # print(key,value, value is Expanded)
+            if value is Expanded:
+                object.pop(key)
+            else:
+                object[key] = value.builtin() if hasattr(value, "builtin") else value
+                pass
+        return object
+
         return dict(
             (key, value.builtin() if hasattr(value, "builtin") else value) for key, value in self.items()
         )
@@ -585,6 +577,14 @@ class Ref(String, Registry):
     class Reference:
         contents: dict
 
+    def __enter__(self):
+        self._refs = []
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        del self._refs
+        return False
+    
     def resolver(self, root=None):
         import referencing
         from .schemas import Schema
@@ -601,20 +601,22 @@ class Ref(String, Registry):
             from pathlib import Path
             from toolz import compose_left
             from toolz.curried import flip
-
             return compose_left(
                 flip(str.removeprefix, "file://"), Path, Path.expanduser, Path.read_text, 
                 Object.from_string, Ref.Reference)
         elif parts.scheme in ("http", "https"):
             return Ref.retrieve
         elif not parts.scheme and not parts.path and parts.fragment and parts.fragment.startswith("/"):
-            resource = referencing.Resource.from_contents(root, self.default_specification)
-            return referencing._core.Resolver("", referencing._core.Registry().with_resource("", resource)).lookup
-            refer
+            resource = referencing.Resource.from_contents(root.builtin(), self.default_specification)
+            return (
+                referencing._core.Resolver("", referencing._core.Registry().with_resource("", resource).crawl()).lookup
+            )
+            # refer 
             return referencing._core.Resolver(resource.id(), Schema.Ref.REGISTRY.with_resource(
                 resource.id() or "", resource
             ), referencing._core.List([
-                "https://json-schema.org/draft/2020-12/schema"
+                # "https://json-schema.org/draft/2020-12/schema",
+                "https://deathbeds.github.io/nbref/schema/meta.yaml"
             ])).lookup
         elif self == "#":
             return lambda x: Ref.Reference(self.root)
@@ -624,22 +626,35 @@ class Ref(String, Registry):
             return Ref.REGISTRY.resolver(self).lookup
         # the scoped root is used to deference $ref $dynamicRef in the current schema
         resolver = Ref.REGISTRY.resolver_with_root(referencing.Resource.from_contents(root, self.default_specification))
-        resource = referencing.Resource.from_contents(root, self.default_specification)
+        resource = referencing.Resource.from_contents(root.builtin(), self.default_specification)
         return referencing._core.Resolver(resource.id(), Schema.Ref.REGISTRY.with_resource(
             resource.id() or "", resource
-        ), referencing._core.List([
-            "https://json-schema.org/draft/2020-12/schema"
+        ).crawl(), referencing._core.List([
+            resource.contents.get("$schema", "https://deathbeds.github.io/nbref/schema/meta.yaml")
         ])).lookup
 
         return Ref.REGISTRY.resolver_with_root(referencing.Resource.from_contents(root, self.default_specification)).lookup
     
     def resolve(self, root=None):
         # the root is passed by an expansion function
+        # it can only make a schema and then only schema can use the
         from .schemas import Schema
-        subschema = Object.dispatch(Ref.resolver(self, root)(self).contents)
-
-        return subschema
-    
+        dynamic = self.path[-1] == "$dynamicRef"
+        visits = None
+        # if not dynamic:
+        #     visited = getattr(self.root, "visited_cache", None)
+        #     if visited is None:
+        #         visited = self.root.visited_cache = dict()
+        #     visits = visited.get(str(self))
+        if visits is None:
+            object = Object.dispatch(Ref.resolver(self, root)(self).contents)
+            if len(object.path) == 1:
+                object.set_root(object)
+            # if self.path[-1] == "$ref":
+            #     visits
+            # if len(visits.path) == 1 and self.path[-1] == "$ref":
+            #     visits.set_root(self.root)
+        return object
     def parse(self):
         import urllib.parse
         return urllib.parse.urlparse(str(self))

@@ -1,5 +1,5 @@
 from .exceptions import ValidationError
-from .objects import HasPath, Object, Dict, Boolean, Uri, Ref, dispatch, Array, HasSchema
+from .objects import Expanded, HasPath, Object, Dict, Boolean, Uri, Ref, dispatch, Array, HasSchema, Expanded
 
 import collections
 # create separate classes for all the facets of the 2020-12 json meta schema.
@@ -102,12 +102,12 @@ class Applicator:
             return self.get("additionalProperties", {})
         return {}
     
-    def property(self, key):
+    def property(self, key, expand=True):
         type = self.type()
         if "object" in type:
-            subschema = Schema.property_object(self, key)
+            subschema = Schema.property_object(self, key, expand)
         elif "array" in type and isinstance(key, int):
-            subschema = Schema.property_array(self, key)
+            subschema = Schema.property_array(self, key, expand)
         else:
             subschema = Schema(type=type).set_parent(self).set_root(self.root).set_path(self.path + [key])
 
@@ -119,23 +119,26 @@ class Applicator:
 
         return subschema
     
-    def property_object(self, key):
+    def property_object(self, key, expand=True):
         properties = self.all("properties", {})
         if key in properties:
-            value = properties.all(key, None)
+            value = Dicts.all(properties, key, None, expand=expand)
             if value is None:
                 value = Schema().set_parent(self).set_root(self.root).set_path(self.path + ["properties", key])
-                    
-            return Schema.expand(value)
-        additional = self.all("additionalProperties", None)
+            if expand:
+                return Schema.expand(value)
+            return value
+        additional = self.all("additionalProperties", None, expand=expand)
         if additional is None:
             return Schema().set_parent(self).set_root(self.root).set_path(self.path + ["additionalProperties"])
         return additional
     
-    def property_array(self, key):
+    def property_array(self, key, expand=True):
         items = self.get("prefixItems", [])
         if key < len(items):
-            return Schema.expand(items[key])
+            if expand:
+                return Schema.expand(items[key])
+            return items[key]
         additional = self.get("items", None)
         if additional is None:
             return Schema().set_parent(self).set_root(self.root).set_path(self.path + ["items"])
@@ -146,6 +149,8 @@ class Validation:
             
     def type(self):
         type = self.get("type")
+        if type is Expanded:
+            type = None
         if type is not None or isinstance(type, dict):
             return type
         types = set()
@@ -180,27 +185,40 @@ class Expand:
             # test the object for if then else schema
             # one of or anyof
         
-    def expand(self, object=None):
+    def expand(self, object=None, value=None):
+        prior = self
+        is_root = self is self.root
         if getattr(self, "_schema_expanded", False):
             return self
         
         if isinstance(self, (bool, Boolean)):
-            self = self.reflect(Schema())
+            self = prior.reflect(Schema())
         
         if isinstance(self, (dict, collections.ChainMap)):
+            self = Schema.expand_type_array(self)
+            # if is_root:
+            #     self.root = self
             subschemas = list(Schema.expand_subschemas(self))
             if subschemas:
                 if isinstance(self, Schema):
-                    return self.extend(
-                        x for x in subschemas if x is not self
-                    )
-                self = Schema(*subschemas)
-
-        self = Schema.expand_type_array(self)
+                    self = Schema(*subschemas, *self.maps)
+                    # return self
+                    # return self.extend(
+                    #     x for x in subschemas if x is not self
+                    # )
+                else: 
+                    self = Schema(*subschemas)
+            if is_root:
+                self.root = self
 
         
-        self._schema_expanded = True
+            self._schema_expanded = True
 
+        # for key in ("$ref",):
+        #     value = self.get(key)
+        #     if isinstance(value, str):
+        #         self.root.visited_cache.setdefault(str(value), self)
+                
         if object is not None:
             subschema = Schema.expand_one_of(self, object)
             return subschema
@@ -222,7 +240,7 @@ class Expand:
                 for subschema in one:
                     try:
                         Schema(subschema).validate_object(object)
-                        return Schema(subschema).expand().append(oneOf=[]).append(self)
+                        return Schema(subschema).expand().append(oneOf=Expanded).append(self)
                     except ValidationError:
                         continue
                 else:
@@ -243,7 +261,9 @@ class Expand:
                 pass
             if len(type) > 1:
                 # override type
-                self.insert(0, type=None, oneOf=[
+                if not isinstance(self, Schema):
+                    self = Schema(self)
+                self.insert(0, type=Expanded, oneOf=[
                     dict(type=t) for t in type
                 ])
                 # return self.reflect(Schema(oneOf=[
@@ -255,14 +275,22 @@ class Expand:
     def expand_ref(self, dynamic=False):
         for dynamic, key in enumerate(("$ref", "$dynamicRef")):
             ref = self.get(key)
-            if ref is not None and isinstance(ref, str):
+            
+            if isinstance(ref, str):
+                # if "$ref" == key:
+                #     visited = getattr(self.root, "visited_cache", None)
+                #     if visited is None:
+                #         visited = self.root.visited_cache = dict()
+                #     if ref in visited:
+                #         yield visited[ref]
+                #         continue
                 # the dynamic and local references have different roots
                 # the dynamic reference starts at the root level schema.
                 # the local reference refers to the containing document.
                 root = self.root # if dynamic else ref.root
-                object = Ref.resolve(ref, root)
-
-                yield Schema.expand(object)
+                yield Schema(**{key: Expanded})
+                subschema = Ref.resolve(ref, root)
+                yield Schema.expand(subschema)
 
 class Repr:
     def repr(self, type=None):
@@ -400,16 +428,16 @@ class Validate:
     
     def validator(self):
         import jsonschema, referencing
-        if isinstance(self, collections.ChainMap):
-            return Schema.validator(self.maps[0])
+        # if isinstance(self, collections.ChainMap):
+        #     return Schema.validator(self.maps[0])
         schema = self.builtin() if isinstance(self, Object) else self
-        return jsonschema.Draft202012Validator(
-            schema,
-            # resolver=jsonschema.validators.RefResolver.from_schema(self.root.builtin(), referencing.jsonschema.DRAFT202012.id_of),
-        )
+        # return jsonschema.Draft202012Validator(
+        #     schema,
+        #     resolver=jsonschema.validators.RefResolver.from_schema(self.root.builtin(), referencing.jsonschema.DRAFT202012.id_of),
+        # )
         return jsonschema.Draft202012Validator(
             self.builtin() if isinstance(self, Object) else self,
-            resolver=jsonschema.validators.RefResolver.from_schema(self.root, referencing.jsonschema.DRAFT202012.id_of),
+            resolver=jsonschema.validators.RefResolver.from_schema(self.root.builtin(), referencing.jsonschema.DRAFT202012.id_of),
             registry=Ref.REGISTRY,
             _resolver=Ref.REGISTRY.resolver_with_root(referencing.Resource.from_contents(self.root, referencing.jsonschema.DRAFT202012))
         )
@@ -527,9 +555,14 @@ class Dicts(Object, collections.ChainMap):
     def builtin(self) -> dict:
         """an builtin python dict that merges the content as this object, but without the path and schema information."""
         object = dict()
+        blocked = list()
         for map in self.maps:
             for key, value in map.items():
-                if key in object:
+                if value is Expanded:
+                    blocked.append(key)
+                if key in blocked:
+                    continue
+                elif key in object:
                     if isinstance(object[key], (dict, collections.ChainMap)):
                         object[key].update(value.builtin() if hasattr(value, "builtin") else value)
                     else:
@@ -547,7 +580,7 @@ class Dicts(Object, collections.ChainMap):
     #     return self
     
     
-    def all(self, key, default=BaseException):
+    def all(self, key, default=BaseException, expand=True):
         # in theory only schemas should be chainmaps.
         from .schemas import Schema
 
@@ -557,8 +590,8 @@ class Dicts(Object, collections.ChainMap):
             except () if default is BaseException else KeyError:
                 return default
             if isinstance(object, (dict, collections.ChainMap)):
-                object = self.reflect(self.all_dicts(key), key)
-                # object = self.all_dicts(key).set_root(self.root).set_parent(self).set_path(self.path + [key])
+                # object = self.reflect(self.all_dicts(key), key)
+                object = self.all_dicts(key, expand=expand).set_parent(self).set_path(self.path + [key])
         else:
             try:
                 object = self[key]
@@ -568,8 +601,8 @@ class Dicts(Object, collections.ChainMap):
             # if not isinstance(object, Schema):
                 # why is this here? i think schemas are the only thing that make sense to have a dictionary mapping.
                 # this wont be consistent more generally.
-            self.reflect(object, key)
-                # object = Schema(object).set_root(self.root).set_parent(self).set_path(self.path + [key])
+            # self.reflect(object, key)
+            object = Schema(object).set_root(self.root).set_parent(self).set_path(self.path + [key])
 
         if self.schema and object is not None:
             object.schema = Schema.property(self.schema, key)
@@ -588,14 +621,25 @@ class Dicts(Object, collections.ChainMap):
             lines = [self[key]] if key in self else []
         return self.reflect(Array(lines), key)
 
-    def all_dicts(self, key):
+    def all_dicts(self, key, expand=True):
         from .schemas import Schema
         values = []
         for i in range(len(self.maps)):
             map = self.maps[i]
             if key in map:
                 # agtain this assumes taht only schemas can be chained maps.
-                values.append(self.reflect(Schema(map[key]), key).expand())
+                value = map[key]
+                if isinstance(value, (dict, collections.ChainMap)):
+                    if expand:
+                        expanded = self.reflect(Schema(value), key).expand()
+                        if len(expanded.maps) == 1:
+                            values.append(value)
+                        else:
+                            values.extend(expanded.maps)
+                    else:
+                        values.append(value)
+        # if len(values) == 1:
+        #     return values[0]
         return self.reflect(Schema(*values), key)
     
     __truediv__ = __getitem__ = all
@@ -634,7 +678,7 @@ class Schema(Core, Metadata, Applicator, Validation, Validate, Expand, Testing, 
     def get(self, key, default=None):
         object = super().get(key, default)
         if key == "$ref" and isinstance(object, str) and isinstance(self.root, Schema):
-            return Ref(object)
+            return object.reflect(Ref(object))
         return object
 
     def __init__(self, *maps, **kwargs):
@@ -662,9 +706,9 @@ class Schema(Core, Metadata, Applicator, Validation, Validate, Expand, Testing, 
             if id and "://" in id:
                 Schema._cached_schemas[id] = self
             # cant expand in init because the root isnt constructed yet
-        if len(self.maps) == 1:
-            # self.set_parent(self.maps[0].parent).set_root(self.maps[0].root).set_path(self.maps[0].path)
-            self.maps[0].reflect(self)
+        # if len(self.maps) == 1:
+        #     # self.set_parent(self.maps[0].parent).set_root(self.maps[0].root).set_path(self.maps[0].path)
+        #     self.maps[0].reflect(self)
         
         # if not isinstance(self.root, Schema):
         #     self.root = self
