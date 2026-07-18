@@ -1,22 +1,17 @@
 type: object
 readOnly: true
-# $id: https://deathbeds.github.io/nbref/schema/nb.jsonschema
+$id: https://deathbeds.github.io/nbref/schema/nb.yaml
 $ref: "#/$defs/nb"
-contentMediaType: application/ipynb+json
+# contentMediaType: application/ipynb+json
 $defs:
     mimetypes:
         # the mimetypes should be dynamically extensible
         properties:
             text/plain:
-                type: string
                 contentMediaType: text/plain
             text/markdown:
-                type: string
-                format: textarea
-                readOnly: true
                 contentMediaType: text/markdown
             text/html:
-                type: string
                 contentMediaType: text/html
             image/png:
                 contentMediaType: image/png
@@ -30,10 +25,14 @@ $defs:
                 contentMediaType: application/json
             application/x-ipynb+json:
                 contentMediaType: application/x-ipynb+json
+            text/uri-list:
+                contentMediaType: text/uri-list
             application/ipynb+json:
                 $ref: "#"
+        additionalProperties: {}
     metadata:
-        role: dialog
+        parent:
+            role: dialog
         type: object
         properties:
             title: 
@@ -43,8 +42,16 @@ $defs:
                 type: string
                 "@type": dcterms:description
     nb:
-        required: [cells, metadata]
+        parent:
+            role: main
+        title: document
+        required: [cells, metadata, nbformat, nbformat_minor]
         properties:
+            nbformat: 
+                type: integer
+            nbformat_minor: 
+                type: integer
+            
             metadata: 
                 $ref: "#/$defs/metadata"
                 properties:
@@ -57,28 +64,38 @@ $defs:
                                 type: object
             cells:
                 type: array
+                title: cells
                 items:
-                    required: [cell, id, execution_count, cell_type, source, outputs]
+                    title: cell
+                    tags: [cell]
+                    required: [id, execution_count, cell_type, source, outputs]
+                    attrs: 
+                        role: none
                     properties:
-                        cell:
-                            type: integer
+                        attachments:
+                            type: object
+                            parent:
+                                role: dialog
+                            additionalProperties:
+                                $ref: "#/$defs/mimetypes"
                         id: 
                             type: string
                             class: [hidden]
                             "@type": "@id"
                         cell_type:
-                            type: string
                             enum: [code, markdown, raw, file]
+                            "@type": rdfs:label
                         execution_count:
+                            title: execution count
                             type: integer
-                            if:
-                                type: null
-                            then:
-                                default: -1
+                            default: -1
                         source:
-                            type: string
-                            format: textarea
-                            role: details
+                            type: [string, array]
+                            role: textbox
+                            aria:
+                                multiline: true
+                            parent:
+                                role: group
                             style:
                                 width: 100%
                         metadata: 
@@ -88,9 +105,16 @@ $defs:
                             type: array
                             readOnly: true
                             items:
+                                title: output
                                 type: object
+                                tags: [output]
                                 required: [output_type]
                                 properties:
+                                    # "@index": 
+                                    #     role: link
+                                    #     title: output
+                                    #     type: integer
+                                    #     readOnly: true
                                     output_type: 
                                         type: string
                                     data:
@@ -102,4 +126,4 @@ $defs:
                                         type: string
                                         format: ascii
                                     metadata:
-                                        type: object
+                                        $ref: "#/$defs/metadata"

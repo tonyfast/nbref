@@ -57,6 +57,9 @@ class Pointer(list):
     def pointer(self, *key):
         from jsonpointer import JsonPointer
         return str(JsonPointer.from_parts(self + list(key))).lstrip("/")
+    
+    def __hash__(self):
+        return hash((type(self), tuple(self)))
 
 # in schema operation it is important to know where an
 # object is in the type and name space.
@@ -69,6 +72,7 @@ class HasPath:
         self.root = self
         self.path = getattr(self, "path", Pointer("#"))
         self.name = None
+        self.suffix = None
         if isinstance(self, (dict, collections.ChainMap, list)):
             super().__init__(*args, **kwargs)
         else:
@@ -79,8 +83,17 @@ class HasPath:
         
         
         # self.root = getattr(self, "root", self)
+    def id(self, *ids, suffix=True):
+        path = self.path + list(ids) + (suffix and self.suffix or [])
+        if path and path[0] == "#":
+            path = Pointer([getattr(self.root, "name", path[0])] + path[1:])
+        return str(path)
         
-        
+    def set_suffix(self, *suffix):
+        suffix = list(x for x in suffix if x is not None)
+        if suffix:
+            self.suffix = suffix
+        return self
     def set_name(self, name=None):
         if name is None:
             # set the naem from the schema
@@ -118,6 +131,9 @@ class HasPath:
         object.set_root(self.root)
         object.set_parent(self)
         object.set_path(self.path + list(key))
+        object.set_name(getattr(self, "name", None))
+        # object.set_suffix(getattr(self, "suffix", None))
+
         # if object.name is None:
         #     object.set_name(self.name)
         if key:
@@ -138,7 +154,9 @@ class HasPath:
             if isinstance(referrer, dict):
                 possible = referrer.get("__file__")
                 if not possible:
-                    possible = referrer.get("__name__")
+                    possible = referrer.get("__qualname__")
+                    if not possible:
+                        possible = referrer.get("__name__")
                 if possible:
                     spec = referrer.get("__spec__")
                     if spec:
@@ -146,24 +164,47 @@ class HasPath:
                     else:
                         pair = possible,
                     
-                    pair +=  list(referrer)[list(referrer.values()).index(self)],
+                    pair += list(referrer)[list(map(id, referrer.values())).index(id(self))],
+                    # pair +=  list(referrer)[list(referrer.values()).index(self)],
                     if pair[1].isalpha() or possible in ("__main__", "__init__"):
                         names.appendleft(pair)
                     else:
                         names.append(pair)
+
         return Dict(possible=names, probable=names[0])["probable"]
 
 
 class HasSchema:
+    def title(self):
+        path = self.path[-1]
+        if isinstance(path, int):
+            path += 1
+        path = str(path)
+        if self.schema is None:
+            if self.name:
+                return self.name
+            if isinstance(path, int):
+                return path
+            return path
+        title = self.schema.get("title")
+        
+        if len(self.path) == 1:
+            if not title:
+                if self.name:
+                    return self.name
+        
+        return title or path
+    
+    def description(self):
+        if self.schema is None:
+            return ""
+        return self.schema.get("description", "")
+        
     def __init__(self, *args, **kwargs):
         if not hasattr(self, "schema"):
             self.schema = None
         super().__init__(*args, **kwargs)
     
-    def force_schema(self, *schema, **kwargs):
-        from .schemas import Schema
-        self.schema = Schema(*schema, **kwargs)
-        return self
     def set_schema(self, *schema, **kwargs):
         from .schemas import Schema
         if not self.schema:
@@ -173,16 +214,22 @@ class HasSchema:
                 self.schema = Schema(*schema, **kwargs)
         return self
     
+    def expand(self):
+        self.schema = self.schema.expand(self)
+        return self
+        
     def modify_schema(self, *schema, **kwargs):
         from .schemas import Schema
         if self.schema:
-            self.schema = Schema(*schema, *self.schema.maps, **kwargs)
+            self.schema = Schema(*schema, self.schema, **kwargs)
         else:
             self.set_schema(*schema, **kwargs)
         return self
     
     modify = modify_schema
-    
+    def copy(self):
+        import copy
+        return self.reflect(type(self)(copy.deepcopy(self.builtin()))).set_schema(self.schema)
     def errors(self):
         if self.schema:
             from .schemas import Schema
@@ -210,6 +257,18 @@ class HasSchema:
         return self
     
 class HasRepr(HasSchema):
+    def render_bs4(self, options=None, *children, **attrs):
+        from .htmls import html_render
+        return html_render(self.schema, self, options, *children, **attrs)
+    
+    def render_html(self, options=None, *children, **attrs):
+        from IPython.display import display, HTML
+        return HTML(str(self.render_bs4(options, *children, **attrs)))
+    html = render_html
+    def display(self, options=None, *children, **attrs):
+        from IPython.display import display
+        display(self.render_html(options, *children, **attrs))
+
     def repr(self, type="text/plain"):
         # this function assumes that there is a schema with the repr project that defines the output mimetypes
         if self.schema:
@@ -231,11 +290,11 @@ class HasRepr(HasSchema):
         # else:
         #     return Html.format_object(self)
 
-    html = repr_html
+    # html = repr_html
 
     def display(self, *schema, **kwargs):
         from IPython.display import display, HTML
-        display(HTML("".join(map(str, self.html(*schema, **kwargs)))))
+        display(self.render_html())
 
         
 
@@ -253,24 +312,6 @@ class Object(HasRepr, HasPath):
     import referencing.jsonschema
     default_specification =  referencing.jsonschema.DRAFT202012
     del referencing
-    
-    # def __new__(cls, *args, **kwargs):
-    #     no_args = issubclass(cls, (dict, list, collections.ChainMap))
-    #     if no_args:
-    #         self = super().__new__(cls)
-    #         self.__init__(*args, **kwargs)
-    #     else:
-    #         self = super().__new__(cls, *args, **kwargs)
-    #         self.__init__(*args, **kwargs)
-
-    #     return self
-
-    # def __init__(self, *args, **kwargs):
-    #     if isinstance(self, (dict, list, collections.ChainMap)):
-    #         super().__init__(*args, **kwargs)
-    #     else:
-    #         super().__init__()
-    #     self._id = None
 
     def __class_getitem__(cls, item):
         if not isinstance(item, tuple):
@@ -321,6 +362,8 @@ class Object(HasRepr, HasPath):
 
     def type(self):
         from .schemas import Schema
+        return python_type_to_schema(self)
+
         if not isinstance(self, Object):
             self = Object.dispatch(self).infer_schema()
             
@@ -347,31 +390,6 @@ class Object(HasRepr, HasPath):
         self._id = id
         return self
         
-    # @classmethod
-    # def dispatch(cls, value):
-    #     from .schemas import Schema
-    #     if isinstance(value, (Object, Schema)):
-    #         return value
-    #     if isinstance(value, (dict,)):
-    #         object = Dict(value)
-    #         if issubclass(cls, Schema):
-    #             return cls(object)
-    #         return object
-    #     elif isinstance(value, (list, tuple)):
-    #         return Array(value)
-    #     elif isinstance(value, str):
-    #         return String(value)
-    #     elif isinstance(value, bool):
-    #         return Boolean(value)
-    #     elif value is None:
-    #         return 
-    #     elif isinstance(value, int):
-    #         return Integer(value)
-    #     elif isinstance(value, float):
-    #         return Number(value)
-    #     elif isinstance(value, Null):
-    #         return value
-    #     raise TypeError(f"Unsupported type: {type(value)}")
     dispatcher = dispatch
     
     @classmethod
@@ -396,7 +414,7 @@ class Object(HasRepr, HasPath):
     @classmethod
     def from_file(cls, file, format=None):
         from pathlib import Path
-        file = Path(file)
+        file = Path(file).expanduser()
         return cls.from_string(file.read_text(), format=format)
         
     
@@ -426,13 +444,15 @@ class Dict(Object, dict):
             yield key, self[key]
 
     def __setitem__(self, key, value):
-        object = self.root
+        root = self.root
         for k in self.path[1:]:
-            object = Dict.__getitem_native__(object, k)
-        if isinstance(object, dict):
-            dict.__setitem__(object, key, value)
-        elif isinstance(object, list):
-            list.__setitem__(object, key, value)
+            root = Dict.__getitem_native__(root, k)
+        if isinstance(root, dict):
+            dict.__setitem__(root, key, value)
+            dict.__setitem__(self, key, value)
+        elif isinstance(root, list):
+            list.__setitem__(root, key, value)
+            list.__setitem__(self, key, value)
         else:
             raise AttributeError(f"Unsupported type: {type(object)}")
 
@@ -441,11 +461,16 @@ class Dict(Object, dict):
             return dict.__getitem__(self, key)
         elif isinstance(self, list):
             return list.__getitem__(self, key)
-        elif isinstance(self, str) and isinstance(key, (int, slice)):
+        elif isinstance(self, str): # and isinstance(key, (int, slice)):
             return str.__getitem__(self, key)
-        else:             
-            # print(self, type(self), key)
-            raise TypeError(f"Unsupported type: {type(self)}")
+        elif isinstance(self, collections.ChainMap):
+            for map in self.maps:
+                try:
+                    return Dict.__getitem_native__(map, key)
+                except KeyError:
+                    continue
+            raise KeyError(key)
+        raise TypeError(f"Unsupported type: {type(self)}")
 
     def __getitem__(self, key):
         if isinstance(key, tuple):
@@ -469,16 +494,11 @@ class Dict(Object, dict):
                 # object.schema = Schema.property(self.schema, key, value)
         return object
     
-    # def properties(self):
-    #     if self.schema:
-    #         keys = list(self.schema.properties())
-    #         yield from keys
-    #         for key in self:
-    #             if key not in keys:
-    #                 yield key
-    #     else:
-    #         yield from self.keys()
-
+    def setdefault(self, key, default):
+        if key not in self:
+            dict.__setitem__(self, key, default)
+        return self[key]
+    
     def builtin(self) -> dict:
         """return a builtin python dict with the same content as this object, but without the path and schema information."""
         object = dict.fromkeys(self)
@@ -658,10 +678,6 @@ class Ref(String, Registry):
     def parse(self):
         import urllib.parse
         return urllib.parse.urlparse(str(self))
-
-# class Core:
-#     def id(self, *ids):
-#         return str(self.path + list(ids))
     
 class Null(Object):
     def __str__(self):
@@ -682,6 +698,7 @@ class Null(Object):
 @dispatch.register(Object)
 def dispatch_object(value):
     return value
+
 @dispatch.register(dict)
 def dispatch_dict(value):
     return Dict(value)

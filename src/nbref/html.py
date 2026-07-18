@@ -220,7 +220,11 @@ class Html(Formatter):
                 value = object.get(property)
                 if value is None:
                     subschema = Schema.property(self, property)
-                    value = Schema.default(subschema).set_parent(object.parent).set_root(object.root).set_path(object.path + [property]).set_schema(subschema)
+                    value = Schema.default(subschema)
+                    if value is None:
+                        value = Null()
+                    # value = value.set_parent(object.parent).set_root(object.root).set_path(object.path + [property]).set_schema(subschema)
+                    value = self.reflect(value, property).set_schema(subschema)
                 el(list, el("li", self.format_object(value, value.schema), klass=["property", property, "additional"], **self.attrs_numeric(value)))
 
         additional_properties = self.additional()
@@ -251,8 +255,12 @@ class Html(Formatter):
         ), item=dict(
             scope="", prop=str(object.path[-1]), type="array"
         ))
-        items = self.get("items", False)        
-        for index in range(len(object)):
+        items = self.get("items", False)
+        length = len(object)
+        minItems = self.get("minItems", 0)
+        if minItems > length:
+            length = minItems
+        for index in range(min(self.get("maxItems", length), length)):
             value = object[index]
             index += 1
             if value.schema is None:
@@ -305,6 +313,7 @@ class Html(Formatter):
                 yield from self.object(object)
             if units:
                 yield from self.unit(object)
+        yield from el("p.description", "".join(self.get("description", "")))
         yield from self.comments(object)
 
     

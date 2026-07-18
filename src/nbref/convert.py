@@ -100,7 +100,6 @@ async def arender_notebook(
             title = soup.select_one("title")
             title.clear()
             title.append(str(first_heading.string))
-            print(title, first_heading)
             t = soup.select_one("hgroup").select_one(HEADINGS)
             t.clear()
             t.append(str(first_heading.string))
@@ -194,14 +193,12 @@ def render(nb):
     soup = bs4.BeautifulSoup(html, "html.parser")
     ammend_attachments(nb, soup)
     ammend_headings(soup)
-    print(soup.select("section.nb li.cell details.outputs"))
     for output in soup.select("section.nb li.cell details.outputs"):
         first_heading = output.select_one("h1, h2, h3, h4, h5, h6")
         if first_heading:
             title = soup.select_one("title")
             title.clear()
             title.append(first_heading.string)
-            print(title, first_heading)
             break
     return str(soup)
     
@@ -209,6 +206,7 @@ def render(nb):
 def ammend_headings(soup):
     for listing, cell in zip(soup.select("details.nb.nav nav li.cell"), soup.select("ol.cells>li.cell")):
         hs = cell.select_one("details.outputs").select("h1, h2, h3, h4, h5, h6")
+        listing.attrs.update({"data-headings": len(hs)})
         if hs:
             local_headings = tag("ol", **{"class": "headings"})
             listing.append(local_headings)
@@ -247,7 +245,7 @@ def main(argv=None):
     })
     loop.run_until_complete(coro)
 
-# create an synchronous and asynchronous version of the function that writes the notebook to a file
+    # create an synchronous and asynchronous version of the function that writes the notebook to a file
 
 # write a function that does teh fibonacci sequence using recursion and memoization
 if __name__ == "__main__":

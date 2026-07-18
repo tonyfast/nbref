@@ -18,8 +18,12 @@ properties:
     role:
         type: string
         dependentSchemas:
-            children:
-                type: array
+            unit:
+                $ref: "#"
     attrs:
+        title: element attributes
         type: object
+    parent:
+        title: define the parent outer parent of an element.
+        $ref: '#'
     

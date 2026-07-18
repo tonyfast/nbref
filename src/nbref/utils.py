@@ -46,8 +46,10 @@ def parse_html(object):
     """parse html from a string, returning a Tag or a list of Tags"""
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(object, "html.parser")
-    if len(soup.contents) == 1:
-        return soup.contents[0]
+    # if len(soup.contents) == 1:
+    #     return soup.contents[0]
+    if not isinstance(soup.contents, list):
+        return [soup.contents]
     return soup.contents
 
 def el(
@@ -77,7 +79,14 @@ def el(
         klasses = tag.attrs.setdefault("class", [])
         for k in klass:
             if k not in klasses:
-                klasses.append(k)
+                if isinstance(k, str):
+                    klasses.append(k)
+    classes = []
+    for c in tag.attrs.get("class", []):
+        if c not in classes:
+            classes.append(c)
+    tag.attrs["class"] = classes
+
     if data is not None:
         # the data dict is for custom data attributes, like {"id": "123"}
         tag.attrs.update({f"data-{k}": v for k, v in data.items()})
@@ -160,3 +169,16 @@ def iter_values(object, path=None):
         yield from (iter_values(x, path + [i]) for i, x in enumerate(object))
     else:
         yield object
+
+def get_length(object):
+    """get the length of an object, returning 1 for non-iterables"""
+    if isinstance(object, (list, tuple, dict)):
+        return len(object)
+    return None
+
+def tracebacks(tb=None):
+    """list tracebacks in an exception"""
+    tb = getattr(tb, "__traceback__", tb)
+    if tb is None:
+        tb = sys.last_traceback
+    return [x[0] for x in traceback.walk_tb(tb)]

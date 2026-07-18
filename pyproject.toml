@@ -7,3 +7,6 @@ name = "nbref"
 authors = [{name = "a11yhood", email = "tony.fast@gmail.com"}]
 readme = "README.md"
 dynamic = ["version", "description"]
+dependencies = [
+    "jinja2", "toolz", "python-slugify"
+]

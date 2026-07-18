@@ -1,16 +1,37 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://deathbeds.github.io/nbref/schema/meta.yaml
+$dynamicRef: "#meta"
 allOf:
 - $ref: https://json-schema.org/draft/2020-12/schema
 - $ref: https://www.schemastore.org/jsonld.json
+$dynamicAnchor: meta
 properties:
-    class:
-        type: array
-    data:
-        type: object
-    item:
-        type: object
-    aria:
-        type: object
     role:
         type: string
+        dependentSchemas:
+            unit:
+                $dynamicRef: "#meta"
+    tags:
+        type: array
+        $comment: |
+            tags are preferred over class because class is reserved in languages.
+            this leaves us to avoid using reserved words generally.
     attrs:
+        title: element attributes
         type: object
+    data:
+        title: shorthand for data attributes
+        type: object
+    item:
+        title: shorthand for microdata item properties
+        type: object
+    aria:
+        title: shorthand for aria attributes
+        type: object
+    style:
+        title: shorthand for style attributes
+        type: object
+    parent:
+        title: define the parent outer parent of an element.
+        $dynamicRef: "#meta"
+    

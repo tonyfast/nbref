@@ -1,54 +1,85 @@
-from functools import partial
+from dataclasses import dataclass
+import json
+
 from bs4 import Tag
+from functools import partial
 import bs4
 import cssselect
 import jsonschema
+import jsonschema_specifications
+import referencing
 
 VALIDATOR = jsonschema.Draft202012Validator
 
+def dispatch_object(object):
+    """dispatch an object to a type that carries the object path and root for pointer resolution, and a freeze method to prevent further path tracking when we want to use the object as a value rather than a pointer"""
+    if isinstance(object, Pointed):
+        return object
+    freeze = getattr(object, "_freeze", False)
+    value = None
+    if isinstance(object, dict):
+        return Dict(object).freeze(freeze)
+    elif isinstance(object, list | tuple | set):
+        return List(object).freeze(freeze)
+    elif isinstance(object, int | float | bool):
+        return Number(object).freeze(freeze)
+    elif isinstance(object, str):
+        return Str(object).freeze(freeze)
+    elif isinstance(object, type(None)):
+        return None
+    raise TypeError(f"unsupported type {type(object)} for object {object}")
 
-class Pointer(list):
-    separator = ":"
-
-    def __str__(self):
-        return self.separator.join(map(str, self))
-
-    def __getitem__(self, key):
-        return Pointed.dispatch(super().__getitem__(key))
-
+def dispatch_python(object):
+    """dispatch an object to a type that carries the object path and root for pointer resolution, and a freeze method to prevent further path tracking when we want to use the object as a value rather than a pointer"""
+    if isinstance(object, Pointed):
+        return object
+    if isinstance(object, dict):
+        return dict(object)
+    elif isinstance(object, list | tuple | set):
+        return list(object)
+    elif isinstance(object, int):
+        return int(object)
+    elif isinstance(object, float):
+        return float(object)
+    elif isinstance(object, bool):
+        return bool(object)
+    elif isinstance(object, str):
+        return str(object)
+    elif isinstance(object, type(None)):
+        return None
+    raise TypeError(f"unsupported type {type(object)} for object {object}")
 
 class Pointed:
-    path: Pointer = None
+    """an object that carries pointers to the data and optional schema. the pointer is tracked as we access properties of the object, and can be frozen when we want to use the object as a value rather than a pointer"""
+    path: "Pointer" = None
     root: None = None
-    _freeze: bool = False
+    schema: dict | None = None
+    _freeze: bool = True
+    _depth: int = -1
 
-    def freeze(self, freeze=True):
+    dispatch = staticmethod(dispatch_object)
+    py = dispatch_python
+
+    def _ipython_display_(self):
+        from IPython.display import display
+        print(json.dumps(self.py(), indent=2))
+
+    def __enter__(self):
+        self.freeze(False)
+        self._depth += 1
+        return self
+    def __exit__(self, exc_type, exc, tb):
+        self.freeze(True)
+        self._depth -= 1
+        
+    def freeze(self, freeze=None):
+        if freeze is None:
+            freeze = not self._freeze
         self._freeze = freeze
         return self
 
-    def set_root(self, root):
-        self.root = root
-        return self
-
-    def set_path(self, path):
-        self.path = Pointer(path)
-        return self
-
-    @classmethod
-    def dispatch(cls, object):
-        freeze = getattr(object, "_freeze", False)
-        value = None
-        if isinstance(object, dict):
-            return Dict(object).freeze(freeze)
-        elif isinstance(object, list | tuple | set):
-            return List(object).freeze(freeze)
-        elif isinstance(object, int | float | bool):
-            return Number(object).freeze(freeze)
-        elif isinstance(object, str):
-            return Str(object).freeze(freeze)
-        elif isinstance(object, type(None)):
-            return None
-        raise TypeError(f"unsupported type {type(object)} for object {object}")
+    def resolve(self, pointer, object=BaseException):
+        return schema_ref(self, "$ref", pointer, object)
 
     def ptr(self, root=None):
         parts = self.path
@@ -56,385 +87,99 @@ class Pointed:
             parts = Pointer([root or self.root.get("$id", "#")] + self.path[1:])
         return str(parts)
 
+    def set_path(self, path):
+        self.path = Pointer(path)
+        return self
+
+    def set_root(self, root):
+        self.root = root
+        return self
+    
+    def set_schema(self, schema):
+        self.schema = Pointed.dispatch(schema)
+        return self
+    
+    def pipe(self, *funcs, **kwargs): 
+        args = (self,)
+        for f in funcs:
+            args, kwargs = (f(*args, **kwargs),), {}
+        return args[0]
+
+
+def attach_schema(self):
+    if self.schema:
+        self["$schema"] = self.schema
+    return self
+
+def getitem_with_pointer(self, key, default=BaseException):
+    if default is BaseException:
+        if isinstance(self, dict):
+            object = dict.__getitem__(self, key)
+        elif isinstance(self, list):
+            object = list.__getitem__(self, key)
+
+    else:
+        object = super(type(self), self).get(key, default)
+    # if not self._freeze:
+    #     if key == "$ref":
+    #         return schema_ref(self, key, object)
+    schema = self.schema
+    if self.schema:
+        schema = schema_property(self.schema, key)
+    if object is None:
+        return object
+    return (
+        self.dispatch(object)
+        .set_root(self.root)
+        .set_path(self.path + [key])
+        .set_schema(schema)
+        .freeze(self._freeze)
+    )
 
 class Dict(Pointed, dict):
+    __getitem__ = getitem_with_pointer
+    attach_schema = attach_schema
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.path is None:
             self.path = Pointer(["#"])
         if self.root is None:
-            self.root = self
-
-    def __getitem__(self, key):
-        object = super(type(self), self).__getitem__(key)
-        if not self._freeze:
-            if key == "$ref":
-                return schema_ref(self, key, object)
-        return (
-            self.dispatch(object)
-            .set_root(self.root)
-            .set_path(self.path + [key])
-            .freeze(self._freeze)
-        )
+            self.set_root(self)
 
     def get(self, key, default=None):
-        if key in self:
-            return self[key]
-        else:
-            return default
+        return getitem_with_pointer(self, key, default)
+    
+class Schema(Dict):
+    _freeze = False
+        
 
 
 class List(Pointed, list):
-    __getitem__ = Dict.__getitem__
-
-
-class Str(Pointed, str):
-    pass
+    __getitem__ = getitem_with_pointer
+    attach_schema = attach_schema
 
 
 class Number(Pointed, int):
     pass
 
+class Pointer(list):
+    separator = ":"
 
-import jsonschema_specifications, referencing
+    def __getitem__(self, key):
+        return Pointed.dispatch(super().__getitem__(key))
 
-
-def schema_id(schema):
-    return schema.ptr()
-
-
-def schema_title(schema):
-    if "title" in schema:
-        return schema["title"]
-    if schema.path:
-        return schema.path[-1]
-    if "$id" in schema:
-        return schema["$id"]
-    return ""
+    def __str__(self):
+        return self.separator.join(map(str, self))
 
 
-def schema_description(schema):
-    return schema.get("description", "")
+class Str(Pointed, str):
+    pass
 
-
-def schema_ref(schema, key, ref):
-    if "$ref" == key:
-        resolver = jsonschema_specifications.REGISTRY.resolver_with_root(
-            referencing.Resource.from_contents(
-                schema.root, referencing.jsonschema.DRAFT202012
-            )
-        )
-        resolved = Pointed.dispatch(resolver.lookup(ref).contents)
-        if ref.startswith("#"):
-            resolved.set_path(ref.split("/")).set_root(schema.root)
-        return resolved
-    return None
-
-
-def render_schema(schema, data, **attrs):
-    match schema_type(schema, data):
-        case "oneOf":
-            return render_one_of(schema, data, **attrs)
-        case "anyOf":
-            return render_any_of(schema, data, **attrs)
-        case "object":
-            return render_object(schema, data, **attrs)
-        case "array":
-            return render_array(schema, data, **attrs)
-        case "string":
-            return render_string(schema, data, **attrs)
-        case "number" | "integer":
-            return render_number(schema, data, **attrs)
-        case "boolean":
-            return render_boolean(schema, data, **attrs)
-        case "null":
-            return render_null(schema, data, **attrs)
-        case _:
-            return el("data", value=data, **attrs)
-
-
-def render_id(schema, data):
-    return data.ptr()
-
-
-def render_label(schema, data, **attrs):
-    attrs.setdefault("for", data.ptr())
-    attrs["id"] = data.ptr() + "::label"
-    return el("label.schema", schema_title(schema), **attrs)
-
-
-def render_string(schema, data, **attrs):
-    if "format" in schema:
-        attrs.setdefault("type", schema["format"])
-    if "maxLength" in schema:
-        attrs.setdefault("maxlength", schema["maxLength"])
-    if "minLength" in schema:
-        attrs.setdefault("minlength", schema["minLength"])
-    if "pattern" in schema:
-        attrs.setdefault("pattern", schema["pattern"])
-    attrs.setdefault("item", {}).update(prop=str(data.path[-1]))
-    return el(render_input(schema, data, **attrs), klass="string")
-
-
-def render_number(schema, data, **attrs):
-    # we could support `format`
-    klass = "number"
-    if "multipleOf" in schema:
-        attrs.setdefault("step", schema["multipleOf"])
-    if schema_type(schema, data) == "integer":
-        attrs.setdefault("step", "1")
-    if "maximum" in schema:
-        attrs.setdefault("max", schema["maximum"])
-    if "minimum" in schema:
-        attrs.setdefault("min", schema["minimum"])
-    if "exclusiveMaximum" in schema:
-        attrs.setdefault("max", schema["exclusiveMaximum"])
-    if "exclusiveMinimum" in schema:
-        attrs.setdefault("min", schema["exclusiveMinimum"])
-    print(schema, schema.get("readOnly"))
-    if schema.get("readOnly"):
-        return el("data", str(data), value=str(data), item=dict(
-            prop=str(data.path[-1])
-        ), **attrs)
-
-    attrs.setdefault("item", {}).update(prop=str(data.path[-1]))
-    attrs.setdefault("type", "number")
-    attrs.setdefault("id", data.ptr())
-    return el(render_input(schema, data, klass=klass, **attrs))
-
-
-def render_input(schema, data, **attrs):
-    if "format" in schema:
-        attrs.setdefault("type", schema["format"])
-    attrs.setdefault("aria", {}).update(labelledby=data.ptr() + "::label")
-    return el("input.schema", value=data, **attrs)
-
-
-def render_boolean(schema, data, **attrs):
-    if data:
-        attrs.setdefault("checked", "")
-    return el(render_input(schema, data, **attrs), klass="schema.number")
-
-
-def render_null(schema, data, **attrs):
-    return el("data", value=None, **attrs)
-
-
-def schema_validate(schema, data):
-    try:
-        VALIDATOR(schema).validate(data)
-        return True
-    except jsonschema.ValidationError:
+class Null(Pointed):
+    def __bool__(self):
         return False
-
-
-def render_one_of(schema, data, klass="oneOf", **attrs):
-    section = el(f"section.schema.{klass}>ol.schema.{klass}")
-    for subschema in schema["oneOf"]:
-        item = el(f"li.schema.{klass}")
-        if schema_validate(subschema, data):
-            item.append(el("input.schema.validation", type="checkbox", checked=""))
-        else:
-            item.append(el("input.schema.validation", type="checkbox"))
-        item.append(render_schema(subschema, data))
-        section.ol.append(item)
-    return section
-
-
-render_any_of = partial(render_one_of, klass="anyOf")
-
-
-def render_if_then_else(schema, data, **attrs):
-    section = el("section.schema.if.then.else>ol.if.then.else")
-    then_valid = schema_validate(schema["if"], data)
-    else_valid = not then_valid
-
-    if "then" in schema:
-        if then_valid:
-            attrs = dict(checked="")
-        item = el(
-            "li.schema.then", el("input.else.validation", type="checkbox", **attrs)
-        )
-        item.append(render_schema(schema["then"], data))
-        section.ol.append(item)
-    if "else" in schema:
-        if else_valid:
-            attrs = dict(checked="")
-        item = el(
-            "li.schema.else", el("input.else.validation", type="checkbox", **attrs)
-        )
-        item.append(render_schema(schema["else"], data))
-        section.ol.append(item)
-    return section
-
-
-def render_object_properties(schema, data, keys, klass="object", **attrs):
-    items = el(f"li.schema.{klass}.properties>ol.schema.{klass}.properties")
-    for key in keys:
-        value = data[key]
-        subschema = schema.get("properties", {}).get(key, {})
-        item = el("li.property", render_label(subschema, value), render_schema(subschema, value), klass=klass)
-        items.ol.append(item)
-        if klass != "additional":
-            # this could also be turned off with dict(aria=dict(describedby=False))
-            # the additional description will go after the add button like the items
-            # item.append(
-            #     el("p", schema_description(subschema), id=schema.ptr() + "::desc")
-            # )
-            ...
-    return items
-
-
-def render_region(schema, data, *children, **attrs):
-    attrs.setdefault("id", schema.ptr() + "::region")
-    attrs.setdefault("aria", {}).update(
-        labelledby=schema.ptr() + "::title",
-        describedby=schema.ptr() + "::desc",
-    )
-    # class of the type
-    section = el(
-        "section.schema.region",
-        render_hgroup(schema, data),
-        *map(el, children),
-        **attrs,
-    )
-    return section
-
-
-def render_hgroup(schema, data, **attrs):
-    return el(
-        "hgroup",
-        el("h2", schema_title(schema), id=schema.ptr() + "::title"),
-        el("p", schema_description(schema), id=schema.ptr() + "::desc"),
-        **attrs,
-    )
-
-
-def render_object(schema, data, **attrs):
-    section = render_region(schema, data, **attrs)
-    section.append(el("ol.schema.object", aria=dict(labelledby=schema.ptr() + "::title"), item=dict(
-        type=schema.ptr(), prop=str(data.path[-1]), scope=""
-    )))
-    properties = list(schema.get("properties", {}).keys())
-    required = set(schema.get("required", []))
-    additional = schema.get("additionalProperties", False)
-    if required:
-        section.ol.append(
-            render_object_properties(schema, data, required, klass="required")
-        )
-    if properties:
-        keys = [x for x in properties if x not in required]
-        section.ol.append(render_object_properties(schema, data, keys, klass="object"))
-        
-    if additional:
-        # should be able to add and remove additional properties
-        keys = [x for x in data if x not in required or x not in properties]
-        section.ol.append(
-            props := render_object_properties(schema, data, keys, klass="additional")
-        )
-        # a fieldset could work here
-        props.li.append(el("button.schema.array.add", "add item"))
-        props.li.append(el("button.schema.array.rm", "remove item"))
-    return section
-
-
-def render_array(schema, data, **attrs):
-    readonly = attrs.get("readonly", schema.get("readOnly", False))
-    if readonly:
-        attrs["readonly"] = ""
-    section = render_region(
-        schema,
-        data,
-        **attrs
-    )
-    section.append(el("ol.schema.array", aria=dict(labelledby=schema.ptr() + "::title")))
-    el(
-        section.ol,
-        id=data.ptr(),
-        item=dict(type=schema.ptr(), prop=str(data.path[-1]), scope="", id=data.ptr()),
-    )
-    items = schema.get("items", {})
-    prefix_items = schema.get("prefixItems", [])
-
-    for i in range(len(data)):
-        attrs = {}
-        if i < len(prefix_items):
-            subschema = prefix_items[i]
-        else:
-            subschema = items
-        attrs["itemtype"] = subschema.ptr()
-        item = data[i]  # we have to use this accessor to track the path for the item
-        section.ol.append(el("li.schema.array.item", render_schema(subschema, item)))
-    if items and not readonly:
-        section.append(el("button.schema.array.add", "add item"))
-        section.append(el("button.schema.array.rm", "remove item"))
-    return section
-
-
-def schema_id(schema):
-    if "$id" in schema:
-        return schema["$id"]
-    return None
-
-
-def schema_type(schema, data):
-    if "type" in schema:
-        t = schema["type"]
-        if isinstance(t, list):
-            return "anyOf"
-        return t
-
-    if "if" in schema:
-        return "ifThenElse"
-
-    if "oneOf" in schema:
-        return "oneOf"
-    if "anyOf" in schema:
-        return "anyOf"
-
-    if (
-        "properties" in schema
-        or "additionalProperties" in schema
-        or "patternProperties" in schema
-    ):
-        return "object"
-    if "items" in schema or "prefixItems" in schema:
-        return "array"
-
-    if isinstance(data, str):
-        return "string"
-    if isinstance(data, bool):
-        return "boolean"
-    if isinstance(data, float | int):
-        return "number"
-    if data is None:
-        return "null"
-
-    if isinstance(data, dict):
-        return "object"
-    if isinstance(data, list | tuple | set):
-        return "array"
-    raise "any"
-
-
-############################################################
-# html and css utilities for creating and updating elements.
-############################################################
-
-
-def element_from_selector(selector, attrs=None, level=0) -> Tag:
-    """create a Tag from a css selector, supporting a subset of css selectors, and some custom syntax for forms"""
-
-    if attrs is None:
-        attrs = dict()
-    if isinstance(selector, str):
-        selector = cssselect.parse(selector)
-
-    tag = css_parsed(selector, attrs)
-    if tag is None:
-        tag = bs4.Tag(name=attrs.pop("tag"), attrs=attrs)
-    return el(tag, **attrs)
-
+    def __str__(self):
+        return ""
 
 def css_parsed(parsed, attrs=None, level=0):
     """lexical analysis of a parsed css selector, returning the tag name and attributes, supporting a subset of css selectors, and some custom syntax for forms"""
@@ -488,6 +233,7 @@ def el(
 ) -> Tag:
     """create or update tag(s) given tag as a selector, content, and attributes
 
+    a fault tolerant way to manipulate html elements, supporting a subset of css selectors, and some custom syntax for forms, and some custom syntax for forms,
     when the tag is an `Tag`, the content and attributes will be added to the tag, otherwise a new tag will be created from the selector and content and attributes added to it.
     """
 
@@ -524,3 +270,439 @@ def el(
         else:
             tag.append(object)
     return tag
+
+
+def element_from_selector(selector, attrs=None, level=0) -> Tag:
+    """create a Tag from a css selector, supporting a subset of css selectors, and some custom syntax for forms"""
+
+    if attrs is None:
+        attrs = dict()
+    if isinstance(selector, str):
+        selector = cssselect.parse(selector)
+
+    tag = css_parsed(selector, attrs)
+    if tag is None:
+        tag = bs4.Tag(name=attrs.pop("tag"), attrs=attrs)
+    return el(tag, **attrs)
+
+
+def render_array(schema, data, **attrs):
+    readonly = attrs.get("readonly", schema.get("readOnly", False))
+    if readonly:
+        attrs["readonly"] = ""
+    section = render_region(
+        schema,
+        data,
+        **attrs
+    )
+    section.append(el("ol.schema.array", aria=dict(labelledby=schema.ptr() + "::title")))
+    el(
+        section.ol,
+        id=data.ptr(),
+        item=dict(type=schema.ptr(), prop=str(data.path[-1]), scope="", id=data.ptr()),
+    )
+    items = schema.get("items", {})
+    prefix_items = schema.get("prefixItems", [])
+
+    for i in range(len(data)):
+        attrs = {}
+        if i < len(prefix_items):
+            subschema = prefix_items[i]
+        else:
+            subschema = items
+        attrs["itemtype"] = subschema.ptr()
+        item = data[i]  # we have to use this accessor to track the path for the item
+        section.ol.append(el("li.schema.array.item", render_schema(subschema, item)))
+    if items and not readonly:
+        section.append(el("button.schema.array.add", "add item"))
+        section.append(el("button.schema.array.rm", "remove item"))
+    return section
+
+
+def render_boolean(schema, data, **attrs):
+    if data:
+        attrs.setdefault("checked", "")
+    return el(render_input(schema, data, **attrs), klass="schema.number")
+
+
+def render_data(data):
+    return render_schema(getattr(data, "schema", {}), data)
+
+def render_description(schema, **attrs):
+    if "description" in schema:
+        return el("p.schema.description", schema["description"], id=schema.ptr() + "::desc", **attrs)
+    return None
+
+def render_attrs(schema, attrs):
+    attrs.setdefault("on", {}).update(schema.get("on", {}))
+    attrs.setdefault("data", {}).update(schema.get("data", {}))
+    attrs.setdefault("aria", {}).update(schema.get("aria", {}))
+    return attrs
+
+def render_enum(schema, data, **attrs):
+    attrs.setdefault("name", data.path[-1])
+    render_attrs(schema, attrs)
+    print(schema)
+    select  = el("select.schema.enum", **attrs)
+    options = schema_enum(schema)
+    for value, key in options.items():
+        if value == data:
+            option_attrs = dict(value=value, selected="")
+        else:
+            option_attrs = dict(value=value)
+        select.append(el("option", key, **option_attrs))
+    return render_label_and_description(select, schema, data)
+
+def render_examples(schema, **attrs):
+    if "examples" in schema:
+        return el("div.schema.examples", *[render_data(Pointed.dispatch(example).set_schema(schema)) for example in schema["examples"]], **attrs)
+    return None
+
+def render_label_and_description(object, schema, data, **attrs):
+    return render_label(schema, data), object, render_description(schema), render_examples(schema)
+
+
+def render_hgroup(schema, data, **attrs):
+    return el(
+        "hgroup",
+        el("h2", schema_title(schema), id=schema.ptr() + "::title"),
+        el("p", schema_description(schema), id=schema.ptr() + "::desc"),
+        **attrs,
+    )
+
+
+def render_id(schema, data):
+    return data.ptr()
+
+
+def render_if_then_else(schema, data, **attrs):
+    section = el("section.schema.if.then.else>ol.if.then.else")
+    then_valid = schema_validate(schema["if"], data)
+    else_valid = not then_valid
+
+    if "then" in schema:
+        if then_valid:
+            attrs = dict(checked="")
+        item = el(
+            "li.schema.then", el("input.else.validation", type="checkbox", **attrs)
+        )
+        item.append(render_schema(schema["then"], data))
+        section.ol.append(item)
+    if "else" in schema:
+        if else_valid:
+            attrs = dict(checked="")
+        item = el(
+            "li.schema.else", el("input.else.validation", type="checkbox", **attrs)
+        )
+        item.append(render_schema(schema["else"], data))
+        section.ol.append(item)
+    return section
+
+
+def render_input(schema, data, **attrs):
+    if "format" in schema:
+        attrs.setdefault("type", schema["format"])
+    attrs.setdefault("aria", {}).update(labelledby=data.ptr() + "::label")
+    return render_label_and_description(el("input.schema", value=data, **attrs), schema, data)
+
+
+def render_label(schema, data, **attrs):
+    attrs.setdefault("for", data.ptr())
+    attrs["id"] = data.ptr() + "::label"
+    return el("label.schema", schema_title(schema), **attrs)
+
+
+def render_null(schema, data, **attrs):
+    return el("data", value=None, **attrs)
+
+
+def render_number(schema, data, **attrs):
+    # we could support `format`
+    klass = "number"
+    if "multipleOf" in schema:
+        attrs.setdefault("step", schema["multipleOf"])
+    if schema_type(schema, data) == "integer":
+        attrs.setdefault("step", "1")
+    if "maximum" in schema:
+        attrs.setdefault("max", schema["maximum"])
+    if "minimum" in schema:
+        attrs.setdefault("min", schema["minimum"])
+    if "exclusiveMaximum" in schema:
+        attrs.setdefault("max", schema["exclusiveMaximum"])
+    if "exclusiveMinimum" in schema:
+        attrs.setdefault("min", schema["exclusiveMinimum"])
+    if schema.get("readOnly"):
+        return render_label_and_description(el("data", str(data), value=str(data), item=dict(
+            prop=str(data.path[-1])
+        ), **attrs), schema, data)
+
+    attrs.setdefault("item", {}).update(prop=str(data.path[-1]))
+    attrs.setdefault("type", "number")
+    attrs.setdefault("id", data.ptr())
+    return render_label_and_description(render_input(schema, data, klass=klass, **attrs), schema, data)
+
+
+def render_object(schema, data, **attrs):
+    section = render_region(schema, data, **attrs)
+    section.append(el("ol.schema.object", aria=dict(labelledby=schema.ptr() + "::title"), item=dict(
+        type=schema.ptr(), prop=str(data.path[-1]), scope=""
+    )))
+    properties = list(schema.get("properties", {}).keys())
+    required = set(schema.get("required", []))
+    additional = schema.get("additionalProperties", False)
+    if required:
+        section.ol.append(
+            render_object_properties(schema, data, required, klass="required")
+        )
+    if properties:
+        keys = [x for x in properties if x not in required]
+        section.ol.append(render_object_properties(schema, data, keys, klass="object"))
+
+    if additional:
+        # should be able to add and remove additional properties
+        keys = [x for x in data if x not in required or x not in properties]
+        section.ol.append(
+            props := render_object_properties(schema, data, keys, klass="additional")
+        )
+        # a fieldset could work here
+        props.li.append(el("button.schema.array.add", "add item"))
+        props.li.append(el("button.schema.array.rm", "remove item"))
+    return section
+
+
+def render_object_properties(schema, data, keys, klass="object", **attrs):
+    items = el(f"li.schema.{klass}.properties>ol.schema.{klass}.properties")
+    for key in keys:
+        subschema = schema.get("properties", {}).get(key, {})
+        value = data.get(key, schema_default(subschema))
+        item = el(
+            "li.property", render_schema(subschema, value), klass=klass
+        )
+        items.ol.append(item)
+        if klass != "additional":
+            # this could also be turned off with dict(aria=dict(describedby=False))
+            # the additional description will go after the add button like the items
+            # item.append(
+            #     el("p", schema_description(subschema), id=schema.ptr() + "::desc")
+            # )
+            ...
+    return items
+
+
+def render_one_of(schema, data, klass="oneOf", **attrs):
+    section = el(f"section.schema.{klass}>ol.schema.{klass}")
+    for subschema in schema["oneOf"]:
+        item = el(f"li.schema.{klass}")
+        if schema_validate(subschema, data):
+            item.append(el("input.schema.validation", type="checkbox", checked=""))
+        else:
+            item.append(el("input.schema.validation", type="checkbox"))
+        item.append(render_schema(subschema, data))
+        section.ol.append(item)
+    return section
+
+
+render_any_of = partial(render_one_of, klass="anyOf")
+
+
+def render_region(schema, data, *children, **attrs):
+    attrs.setdefault("id", schema.ptr() + "::region")
+    attrs.setdefault("aria", {}).update(
+        labelledby=schema.ptr() + "::title",
+        describedby=schema.ptr() + "::desc",
+    )
+    # class of the type
+    section = el(
+        "section.schema.region",
+        render_hgroup(schema, data),
+        *map(el, children),
+        **attrs,
+    )
+    return section
+
+
+def render_schema(schema, data, **attrs):
+    schema = Pointed.dispatch(schema)
+    data = Pointed.dispatch(data)
+    match schema_type(schema, data):
+        case "oneOf":
+            return render_one_of(schema, data, **attrs)
+        case "anyOf":
+            return render_any_of(schema, data, **attrs)
+        case "object":
+            return render_object(schema, data, **attrs)
+        case "array":
+            return render_array(schema, data, **attrs)
+        case "enum":
+            return render_enum(schema, data, **attrs)
+        case "string":
+            return render_string(schema, data, **attrs)
+        case "number" | "integer":
+            return render_number(schema, data, **attrs)
+        case "boolean":
+            return render_boolean(schema, data, **attrs)
+        case "null":
+            return render_null(schema, data, **attrs)
+        case _:
+            return el("data", value=data, **attrs)
+
+
+def render_string(schema, data, **attrs):
+    if "format" in schema:
+        attrs.setdefault("type", schema["format"])
+    if "maxLength" in schema:
+        attrs.setdefault("maxlength", schema["maxLength"])
+    if "minLength" in schema:
+        attrs.setdefault("minlength", schema["minLength"])
+    if "pattern" in schema:
+        attrs.setdefault("pattern", schema["pattern"])
+    attrs.setdefault("item", {}).update(prop=str(data.path[-1]))
+    return el(render_input(schema, data, **attrs), klass="string")
+
+
+def schema_default(schema):
+    if "default" in schema:
+        return schema["default"]
+    return None
+
+
+def schema_description(schema):
+    return schema.get("description", "")
+
+def schema_enum(schema):
+    enum = schema.get("enum", [])
+    if not isinstance(enum, dict):
+        return dict(zip(enum, enum))
+    return enum
+
+def schema_id(schema):
+    return schema.ptr()
+
+
+def schema_id(schema):
+    if "$id" in schema:
+        return schema["$id"]
+    return None
+
+def schema_items(schema, key):
+    if isinstance(key, int):
+        prefixItems = schema.get("prefixItems", [])
+        if isinstance(prefixItems, list) and 0 <= key < len(prefixItems):
+            return prefixItems[key]
+        return schema.get("items", {})
+    return
+
+def schema_oneof(schema, object):
+    oneOf = schema.get("oneOf")
+    if oneOf:
+        for i, subschema in enumerate(oneOf):
+            subschema = Schema(subschema).set_root(schema.root).set_path(schema.path + ["oneOf", str(i)])
+            if schema_validate(subschema, object):
+                if schema_resolver.set.intersection(subschema):
+                    return schema_resolver(subschema, object)
+                return subschema
+    return schema
+    
+def schema_properties(schema):
+    return schema.get("properties", {})
+
+def schema_property(schema, key):
+    if not schema:
+        return {}
+    if (items := schema_items(schema, key)):
+        subschema = items
+    elif (properties := schema_properties(schema)) and key in properties:
+        subschema = properties.get(key, None)
+    elif "additionalProperties" in schema and schema["additionalProperties"] is not False:
+        subschema = schema["additionalProperties"]
+    else:
+        subschema = {}
+    return Pointed.dispatch(subschema).set_root(schema.root)
+
+def schema_resolver(schema, object=BaseException):
+    """resolve special keys that represent more specific schema"""
+    if "$ref" in schema:
+        return schema_ref(schema, "$ref", schema["$ref"], object)
+    if "oneOf" in schema:
+        return schema_oneof(schema, object)
+    return schema
+
+schema_resolver.set = {"$ref", "oneOf"}
+
+def schema_ref(schema, key, ref, object=BaseException):
+    if "$ref" == key:
+        if isinstance(ref, list):
+            import jsonpointer
+            ref = str(jsonpointer.JsonPointer.from_parts(ref))[1:]
+        resolver = jsonschema_specifications.REGISTRY.resolver_with_root(
+            referencing.Resource.from_contents(schema.root)
+        )
+        resolved = Pointed.dispatch(resolver.lookup(ref).contents)
+        if ref.startswith("#"):
+            resolved.set_path(ref.split("/")).set_root(schema.root)
+        if schema_resolver.set.intersection(resolved):
+            return schema_resolver(resolved, object)
+        return resolved
+    return None
+
+
+def schema_title(schema):
+    if "title" in schema:
+        return schema["title"]
+    if schema.path:
+        return schema.path[-1]
+    if "$id" in schema:
+        return schema["$id"]
+    return ""
+
+
+def schema_type(schema, data):
+    if "enum" in schema:
+        return "enum"
+    
+    if "type" in schema:
+        t = schema["type"]
+        if isinstance(t, list):
+            return "anyOf"
+        return t
+
+    if "if" in schema:
+        return "ifThenElse"
+
+    if "oneOf" in schema:
+        return "oneOf"
+    if "anyOf" in schema:
+        return "anyOf"
+
+    
+    if (
+        "properties" in schema
+        or "additionalProperties" in schema
+        or "patternProperties" in schema
+    ):
+        return "object"
+    if "items" in schema or "prefixItems" in schema:
+        return "array"
+
+    if isinstance(data, str):
+        return "string"
+    if isinstance(data, bool):
+        return "boolean"
+    if isinstance(data, float | int):
+        return "number"
+    if data is None:
+        return "null"
+
+    if isinstance(data, dict):
+        return "object"
+    if isinstance(data, list | tuple | set):
+        return "array"
+    raise "any"
+
+
+def schema_validate(schema, data):
+    try:
+        VALIDATOR(schema).validate(data)
+        return True
+    except jsonschema.ValidationError:
+        return False
