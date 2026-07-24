@@ -242,10 +242,10 @@ class Expand:
             "else": Expanded,
         })
         i, t, e = self.get("if"), self.get("then"), self.get("else")
-        if all(x is not None and x is not Expanded for x in (i, t, e)):
-            oneOf.append(Schema(i, t))
-            oneOf.append(e)
-            subschema.append(oneOf=oneOf)
+        # if all(x is not None and x is not Expanded for x in (i, t, e)):
+        #     oneOf.append(Schema(i, t))
+        #     oneOf.append(e)
+        #     subschema.append(oneOf=oneOf)
         # if i is not None:
         #     if_then = Schema({"if": Expanded}, i)
         #     if t is not None:
