@@ -1,6 +1,6 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: https://deathbeds.github.io/nbref/schema/meta.yaml
-$dynamicRef: "#meta"
+# $dynamicRef: "#meta"
 allOf:
 - $ref: https://json-schema.org/draft/2020-12/schema
 - $ref: https://www.schemastore.org/jsonld.json

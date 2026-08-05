@@ -182,3 +182,14 @@ def tracebacks(tb=None):
     if tb is None:
         tb = sys.last_traceback
     return [x[0] for x in traceback.walk_tb(tb)]
+
+def sluggify(str):
+    """sluggify a string, returning a lowercase string with words separated by hyphens"""
+    import re
+    if str is None:
+        str = ""
+    str = str.lower()
+    str = re.sub(r"[^a-z0-9]+", "-", str)
+    str = re.sub(r"-+", "-", str)
+    str = str.strip("-")
+    return str

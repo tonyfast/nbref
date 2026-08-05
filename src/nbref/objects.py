@@ -4,8 +4,9 @@ from curses import meta
 from dataclasses import dataclass
 from functools import partial, singledispatch, wraps
 from operator import add, ge, getitem, methodcaller
+from pathlib import Path
 import re
-
+HERE = Path(__file__).parent
 
 DICT_TYPES = dict, collections.ChainMap
 
@@ -110,7 +111,8 @@ class HasPath:
         return self
     
     def set_root(self, root):
-        self.root = root
+        if self is self.root:
+            self.root = root
         return self
     
     def _name_path(self):
@@ -129,7 +131,7 @@ class HasPath:
         from .schemas import Schema
         # if object.root is object:
         object.set_root(self.root)
-        object.set_parent(self)
+        object.set_parent(None)
         object.set_path(self.path + list(key))
         object.set_name(getattr(self, "name", None))
         # object.set_suffix(getattr(self, "suffix", None))
@@ -215,7 +217,8 @@ class HasSchema:
         return self
     
     def expand(self):
-        self.schema = self.schema.expand(self)
+        from .schemas import Schema
+        self.schema = Schema.expand(self.schema, self)
         return self
         
     def modify_schema(self, *schema, **kwargs):
@@ -229,7 +232,8 @@ class HasSchema:
     modify = modify_schema
     def copy(self):
         import copy
-        return self.reflect(type(self)(copy.deepcopy(self.builtin()))).set_schema(self.schema)
+        return self.reflect(type(self)(copy.copy(self.builtin()))).set_schema(self.schema)
+    
     def errors(self):
         if self.schema:
             from .schemas import Schema
@@ -257,25 +261,29 @@ class HasSchema:
         return self
     
 class HasRepr(HasSchema):
-    def render_bs4(self, options=None, *children, **attrs):
+    def render_bs4(self, options=None, *children, **schema):
         from .htmls import html_render
-        return html_render(self.schema, self, options, *children, **attrs)
+        from .schemas import Schema
+        schema = self.schema.reflect(Schema(self.schema, **schema))
+        return html_render(schema, self, options, *children)
     
-    def render_html(self, options=None, *children, **attrs):
+    def render_html(self, options=None, *children, **schema):
         from IPython.display import display, HTML
-        return HTML(str(self.render_bs4(options, *children, **attrs)))
+        return HTML(str(self.render_bs4(options, *children, **schema)))
     html = render_html
-    def display(self, options=None, *children, **attrs):
+    def display(self, options=None, *children, **schema):
         from IPython.display import display
-        display(self.render_html(options, *children, **attrs))
+        display(self.render_html(options, *children, **schema))
 
     def repr(self, type="text/plain"):
         # this function assumes that there is a schema with the repr project that defines the output mimetypes
         if self.schema:
-            repr = self.schema.property("repr").property(type).get("default", None)
-            if repr:
-                import importlib.metadata
-                return importlib.metadata.EntryPoint(None, repr, None).load()
+            from .schemas import Schema
+            # Schema.property(self.schema, "repr").property(type).validate_object(self)
+            # repr = Schema.property(self.schema, "repr").property(type).get("default", None)
+            # if repr:
+            #     import importlib.metadata
+            #     return importlib.metadata.EntryPoint(None, repr, None).load()
         return self.__class__.dumps
     
     def repr_html(self, *schema, **kwargs):
@@ -418,13 +426,6 @@ class Object(HasRepr, HasPath):
         return cls.from_string(file.read_text(), format=format)
         
     
-def guess_mimetype(string):
-    if re.match(r"^\s*{", string):
-        return "application/json"
-    elif re.match(r"^\s*<", string):
-        return "text/html"
-    else:
-        return "text/plain"
 
 class Expanded:
     pass
@@ -436,6 +437,11 @@ class Dict(Object, dict):
         try:
             return self[key]
         except KeyError:
+            if self.schema:
+                if default is None:
+                    from .schemas import Schema
+                    subschema = Schema.property(self.schema, key)
+                    return self.reflect(Schema.default(subschema))
             return default
         
     def items(self):
@@ -489,8 +495,10 @@ class Dict(Object, dict):
                 object.set_root(self.root)
             object.set_path(self.path + [key])
             if self.schema:
+                # print(444, self.path, key)
                 from .schemas import Schema
-                object.schema = Schema.property(self.schema, key)
+                object.schema = Schema.expand(
+                    Schema.property(self.schema, key), value)
                 # object.schema = Schema.property(self.schema, key, value)
         return object
     
@@ -542,9 +550,15 @@ class Boolean(Integer, ABC):
     __repr__ = __str__
 Boolean.register(bool)
 
+
 class String(Object, str):
-    python_type = str
     __getitem__ = Dict.__getitem__
+
+class I:
+    def __new__(cls, object):
+        return object
+
+String.python_type = I
 
 class Uri(String):
     def parse(self):
@@ -562,6 +576,7 @@ class Registry:
 
         response = requests.get(uri)
         data = requests.get(uri).json()
+        return referencing.Resource.from_contents(Object.dispatch(data), Ref.default_specification)
         return referencing.Resource.from_contents(data, Ref.default_specification)
 
     REGISTRY = referencing.Registry(
@@ -590,12 +605,23 @@ class Registry:
         cls.REGISTRY.crawl()
         return cls
         
+def get_mimetypes():
+    from mimetypes import MimeTypes
+    mimes = MimeTypes()
+    mimes.read(HERE / "mime.types")
+    return mimes
 
-    
+# this function will only work on schema objects because they are the only thing that has references
 class Ref(String, Registry):
     @dataclass
     class Reference:
         contents: dict
+    
+    def __new__(cls, object="", *args, **kwargs):
+        if isinstance(object, Path):
+            # might be better to make a path object
+            object = object.absolute().as_uri()
+        return super().__new__(cls, object, *args, **kwargs)
 
     def __enter__(self):
         self._refs = []
@@ -604,6 +630,33 @@ class Ref(String, Registry):
     def __exit__(self, exc_type, exc_value, traceback):
         del self._refs
         return False
+    
+    def mimetype(self):
+        return get_mimetypes().guess_type(str(self))[0]
+
+    def resolve_anchor(self, anchor):
+        pass
+
+    def resolve_dynamic_anchor(self, anchor):
+        pass
+
+    def resolve_reference(self, object):
+        import referencing
+        return self.REGISTRY.resolver_with_root(
+            referencing.Resource.from_contents(self.root, self.default_specification)
+        ).lookup(object)
+
+    def get_root(self):
+        return self.root
+
+    def resolve_dynamic_reference(self, object):
+        import referencing
+        return self.REGISTRY.resolver_with_root(
+            referencing.Resource.from_contents(self.root, self.default_specification)
+        ).lookup(object)
+
+    def resolve_fragment(self, fragment):
+        pass
     
     def resolver(self, root=None):
         import referencing
@@ -705,6 +758,7 @@ def dispatch_dict(value):
 
 @dispatch.register(list)
 @dispatch.register(tuple)
+@dispatch.register(collections.deque)
 def dispatch_list(value):
     return Array(value)
 
