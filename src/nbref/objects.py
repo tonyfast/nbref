@@ -87,7 +87,7 @@ class HasPath:
     def id(self, *ids, suffix=True):
         path = self.path + list(ids) + (suffix and self.suffix or [])
         if path and path[0] == "#":
-            path = Pointer([getattr(self.root, "name", path[0])] + path[1:])
+            path = Pointer([self.root.get("@id") or getattr(self.root, "name", None) or path[0]] + path[1:])
         return str(path)
         
     def set_suffix(self, *suffix):
@@ -123,7 +123,8 @@ class HasPath:
         return self
     
     def set_path(self, path):
-        self.path = path
+        if self.path and len(self.path) == 1:
+            self.path = path
         self._name_path()
         return self
     
@@ -409,10 +410,11 @@ class Object(HasRepr, HasPath):
     def pipe(self, func, *args, **kwargs):
         return func(self, *args, **kwargs)
     
-    def pipes(self, *funcs):
+    def pipes(self, *funcs, **kwargs):
+        args = self,
         for func in funcs:
-            self = func(self)
-        return self
+            args, kwargs = (func(*args, **kwargs),), {}
+        return args[0]
     
     @classmethod
     def from_string(cls, object, format=None):
@@ -495,11 +497,10 @@ class Dict(Object, dict):
                 object.set_root(self.root)
             object.set_path(self.path + [key])
             if self.schema:
-                # print(444, self.path, key)
+            #     # print(444, self.path, key)
                 from .schemas import Schema
-                object.schema = Schema.expand(
-                    Schema.property(self.schema, key), value)
-                # object.schema = Schema.property(self.schema, key, value)
+                object.schema = Schema.expand(Schema.property(self.schema, key), value)
+            #     # object.schema = Schema.property(self.schema, key, value)
         return object
     
     def setdefault(self, key, default):

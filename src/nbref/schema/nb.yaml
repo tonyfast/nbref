@@ -1,6 +1,7 @@
 type: object
 readOnly: true
 $id: https://deathbeds.github.io/nbref/schema/nb.yaml
+$schema: https://json-schema.org/draft/2020-12/schema
 $ref: "#/$defs/nb"
 # contentMediaType: application/ipynb+json
 $defs:
@@ -31,21 +32,34 @@ $defs:
                 $ref: "#"
         additionalProperties: {}
     metadata:
+        required: [title, description, authors, created, modified]
+        properties:
+            authors:
+                type: array
+            created:
+                type: string
+                format: date-time
+            modified:
+                type: string
+                format: date-time
+            title:
+                type: string
+                role: heading
+                aria:
+                    level: 1
+                "@type": dcterms:title
+            description:
+                role: paragraph
+                type: string
+                "@type": dcterms:description
         parent:
             role: dialog
         type: object
-        properties:
-            title: 
-                type: string
-                "@type": dcterms:title 
-            description: 
-                type: string
-                "@type": dcterms:description
     nb:
         parent:
             role: main
         title: document
-        required: [cells, metadata, nbformat, nbformat_minor]
+        required: [metadata, cells, nbformat, nbformat_minor]
         properties:
             nbformat: 
                 type: integer
@@ -54,6 +68,9 @@ $defs:
             
             metadata: 
                 $ref: "#/$defs/metadata"
+                parent: 
+                    aria:
+                        expanded: true
                 properties:
                     kernelspec: 
                         type: object
@@ -71,6 +88,10 @@ $defs:
                     required: [id, execution_count, cell_type, source, outputs]
                     attrs: 
                         role: none
+                    parent:
+                        role: group
+                        aria:
+                            expanded: true
                     properties:
                         attachments:
                             type: object
@@ -98,17 +119,28 @@ $defs:
                                 role: group
                             style:
                                 width: 100%
+                            if:
+                                oneOf:
+                                    - type: string
+                                      pattern: "\\s*%{2}(\\s{1}|html)"
+                                    - type: array
+                                      prefixItems:
+                                        - type: string
+                                          pattern: "\\s*%{2}(\\s{1}|html)"
+                            then:
+                                tags: ["markdown"]
                         metadata: 
-                            role: dialog
+                            parent:
+                                role: dialog
                             $ref: "#/$defs/metadata"
                         outputs:
                             type: array
-                            readOnly: true
                             items:
                                 title: output
                                 type: object
                                 tags: [output]
                                 required: [output_type]
+                                readOnly: true
                                 properties:
                                     # "@index": 
                                     #     role: link

@@ -647,14 +647,14 @@ def html_markdown(schema, object, options, **attrs):
     cell = (outputs:= (data:= object.parent).parent.parent).parent
     attachments = cell.get("attachments", {})
     for document in parse_html(html):
-        if hasattr(document, "select"):
-            for a in document.select("img"):
-                if a.attrs.get("src", "").startswith("attachment:"):
-                    attachment = a.attrs["src"].partition("attachment:")[2]
-                    if attachment in attachments:
-                        for mimetype, data in attachments[attachment].items():
-                            datauri = f"data:{mimetype};base64,{data}"
-                            a.attrs["src"] = datauri
+        # if hasattr(document, "select"):
+        #     for a in document.select("img"):
+        #         if a.attrs.get("src", "").startswith("attachment:"):
+        #             attachment = a.attrs["src"].partition("attachment:")[2]
+        #             if attachment in attachments:
+        #                 for mimetype, data in attachments[attachment].items():
+        #                     datauri = f"data:{mimetype};base64,{data}"
+        #                     a.attrs["src"] = datauri
         yield document
 
 def html_button(schema, object, options, **attrs):

@@ -85,7 +85,9 @@ def el(
     for c in tag.attrs.get("class", []):
         if c not in classes:
             classes.append(c)
-    tag.attrs["class"] = classes
+    if not classes:
+        tag.attrs.pop("class", None)
+
 
     if data is not None:
         # the data dict is for custom data attributes, like {"id": "123"}
@@ -154,7 +156,9 @@ def infer_schema(*objects):
     builder = genson.SchemaBuilder()
     for object in objects:
         builder.add_object(Object.builtin(object))
-    return builder.to_schema()
+    schema = builder.to_schema()
+    schema.pop("$schema")
+    return schema
     
 def iter_values(object, path=None):
     from nbref import Schema

@@ -33,21 +33,23 @@ def aria_role(schema, options=None, object=None):
     #     t = schema.type()
     # else:
     #     t = object.type()
-    t = Schema.type(schema)
-    # this damn mistake again cost me a lot of time. its best to assume you don't have a schema object, 
-    # but the object may structured accordingly.
-    match t:
-        case "array":
-            return "list"
-        case "object":
-            return "associationlist"
-        case "string":
-            return "textbox"
-        case "number" | "integer":
-            return "spinbutton"
-        case "boolean":
-            return "checkbox"
-        case _:
-            return None
+    if "type" in schema:
+        t = Schema.type(schema)
+        # this damn mistake again cost me a lot of time. its best to assume you don't have a schema object, 
+        # but the object may structured accordingly.
+        match t:
+            case "array":
+                return "list"
+            case "object":
+                return "associationlist"
+            case "string":
+                return "textbox"
+            case "number" | "integer":
+                return "spinbutton"
+            case "boolean":
+                return "checkbox"
+    if "default" in schema:
+        return aria_role(Schema.infer(schema["default"]), options)
+    
         
 Schema.role = aria_role

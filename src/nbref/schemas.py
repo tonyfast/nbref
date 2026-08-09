@@ -1,12 +1,20 @@
+from nbref.templates.schema_forms import Schema
+from nbref.utils import infer_schema
+
 from .exceptions import ValidationError
 from .objects import Expanded, HasPath, Object, Dict, Boolean, Uri, Ref, dispatch, Array, HasSchema, Expanded
 import collections
 # create separate classes for all the facets of the 2020-12 json meta schema.
 # there are core, metadata, applicator, validation, content, format aspects.
+EMPTY = object()
 class Core:
     ref = "https://json-schema.org/draft/2020-12/meta/core"
     def id(self, *ids):
-        anchor = self.get("$anchor", None)
+        
+        path = self.path
+        # print(1,path)
+        if path and path[0] == "#":
+            path[0] = self.root.get("@id") or getattr(self.root, "name", None) or path[0]
         return str(self.path + list(ids))
     
     def anchor(self):
@@ -35,19 +43,24 @@ class Metadata:
     
     def default(self):
         """return a default for this schema from default or examples"""
+        # object = Schema._default(self)
         object = Object.dispatch(Schema._default(self))
-        if object is None:
-            return object
-        object.schema = self
+        # if object is None:
+        #     return object
+        # object.schema = self
         return object
     
     def _default(self):
         default = self.get("default")
+        if default is Schema.Expanded:
+            default = None
+        
         if default is None:
             for example in self.get("examples", []):
                 default = example
                 break
         if default is not None:
+            return default
             default = default.builtin()
             return Object.dispatch(default).set_schema(self)
         type = Schema.type(self)
@@ -97,7 +110,7 @@ class Applicator:
 
     def properties(self):
         """return the properties for this schema"""
-        return self.get("properties") or {}
+        return self.get("properties", {})
     
     def additional(self):
         """return the additionalProperties for this schema"""
@@ -107,7 +120,22 @@ class Applicator:
         elif "object" in type:
             return self.get("additionalProperties", {})
         return {}
-    
+
+    def property_order(self):
+        required = Schema.required(self)
+        # properties = Schema.properties(self)
+        yield from required
+
+        # for key in properties:
+        #     if key not in required:
+        #         yield key
+
+        default = self.get("default", {})
+        if isinstance(default, (dict, collections.ChainMap)):
+            for key in default:
+                if key not in required:# and key not in properties:
+                    yield key
+
     def columns(self, object):
         """return the columns ordered for this schema."""
         required = Schema.required(self)
@@ -156,11 +184,24 @@ class Applicator:
             subschema = Schema.property_object(self, key, expand)
         elif "array" in type and isinstance(key, int):
             subschema = Schema.property_array(self, key, expand)
+        elif type:
+            subschema = self.reflect(Schema(type=type), key)
         else:
-            subschema = Schema(type=type).set_parent(self).set_root(self.root).set_path(self.path + [key])
+            subschema = self.reflect(Schema(), key)
 
         if isinstance(subschema, (bool, Boolean)):
             subschema = subschema.reflect(Schema())
+
+        # parent = Schema.default(self)
+        # if parent is not None:
+        #     if isinstance(parent, (dict, collections.ChainMap)):
+        #         if key in parent:
+        #             default = parent.get(key)
+        #             subschema = subschema.reflect(Schema(subschema, default=default))
+        #     elif isinstance(parent, (list, tuple, str)) and isinstance(key, (int, slice)):
+        #         default = parent[key]
+        #         if default is not None:
+        #             subschema = subschema.reflect(Schema(subschema, default=default))
 
         if self.schema:
             subschema.set_schema(self.schema.root)
@@ -171,31 +212,54 @@ class Applicator:
         """return the subschema for the given property key of an object"""
         getter = self.all if isinstance(self, collections.ChainMap) else self.get
         properties = getter("properties", {})
+        value = Schema.default(self)
         if key in properties:
-            value = Dicts.all(properties, key, None, expand=expand)
-            if value is None:
-                value = Schema().set_parent(self).set_root(self.root).set_path(self.path + ["properties", key])
-            if expand:
-                return Schema.expand(value)
-            return value
-        additional = getter("additionalProperties", None)
-        if additional is None:
-            return Schema().set_parent(self).set_root(self.root).set_path(self.path + ["additionalProperties"])
-        return Schema.expand(additional)
+            subschema = Dicts.all(properties, key, None, expand=expand)
+            if subschema is None:
+                subschema = self.reflect(Schema(), "properties", key)
+            # if expand:
+            #     return Schema.expand(subschema, value.get(key))
+            #     return Schema.expand(subschema, value.get(key))
+            # return subschema
+        else:
+            subschema = getter("additionalProperties", None)
+            if subschema is None:
+                subschema = self.reflect(Schema(), "additionalProperties")
+        id = Schema.id(value, key)
+        if expand:
+            subschema = Schema.expand(subschema, value.get(key))
+        # return subschema
+        return subschema.reflect(Schema(subschema).append(Schema.property_ld(self, subschema, key, value)))
     
     def property_array(self, key, expand=True):
         """return the subschema for the given property key of an array"""
         # print(22, self.path)
+        value = Schema.default(self)    
         items = self.get("prefixItems", [])
         if key < len(items):
-            if expand:
-                return Schema.expand(items[key])
-            return items[key]
+            subschema = items[key]
+        else:
+            subschema = self.get("items", None)
+            if subschema is None:
+                subschema = Schema().set_path(self.path + ["items", key])
+        if expand:
+            subschema = Schema.expand(subschema, value[key])
+
+        return subschema.reflect(Schema(subschema).append(Schema.property_ld(self, subschema, key, value)))
+            
         # print(self)
         additional = self.get("items", None)
         if additional is None:
-            return Schema().set_parent(self).set_root(self.root).set_path(self.path + ["items"])
-        return Schema.expand(additional)
+            additional = Schema().set_parent(self).set_root(self.root).set_path(self.path + ["items"])
+        return Schema.expand(additional, parent[key])
+
+    def property_ld(self, subschema, key, value):
+        id = Schema.id(value, key)
+        t = Schema.id(subschema)
+        if t.startswith(("#:",)):
+            root = Schema.id(self.root).partition(":")[0]
+            # t = t[1:]
+        return {"@id": id, "@type": t}
     
 class Validation:
     ref = "https://json-schema.org/draft/2020-12/meta/validation"
@@ -234,6 +298,9 @@ class Validation:
                 types.add("string")
         # get the types from an applicator
         types = list(types)
+        if not types:
+            if "default" in self:
+                types.append(Schema.infer(Schema.default(self))["type"])
         if len(types) == 1:
             return types[0]
         return list(types)
@@ -261,58 +328,68 @@ class Validation:
 # allOf equivalency
 # if then equivalency
 # default equivalency
-
+from exceptiongroup import ExceptionGroup
+class ValidationErrors(ExceptionGroup):
+    pass
 class Expand:
-    def expand_subschemas(self, object=None):
+    def expand_subschemas(self, object=EMPTY, no_default=False):
         """expand the independent and dependent schema"""
+        if not no_default:
+            yield from Schema.expand_default(self, object)
+
         if not getattr(self, "_schema_expanded", False):
             # expand object independent schema
             yield from Schema.expand_all_of(self)
             # ref is equivalent to allOf in how it merges with schema
             yield from Schema.expand_ref(self)
+            # yield from Schema.expand_role(self)
             
-        if object is not None:
+        if object is not EMPTY:
             # expand object dependent schema
             yield from Schema.expand_if_then_else(self, object)
             yield from Schema.expand_one_of(self, object)
             # this is a good place to expand linked data.
+            yield self
+
+        # if not getattr(self, "_schema_expanded", False):
+        #             yield from Schema.expand_role(self)
         
-    def expand(self, object=None):
+    def expand(self, object=EMPTY, no_default=False):
         prior = self
         is_root = self is self.root
-        if getattr(self, "_schema_expanded", False) and object is None:
+        if getattr(self, "_schema_expanded", False) and object is EMPTY:
             return self
-        else:
-            if isinstance(self, (bool, Boolean)):
-                self = prior.reflect(Schema())
-                if not self:
-                    self = ~self
-            
-            if isinstance(self, (dict, collections.ChainMap)):
-                self = Schema.expand_type_array(self)
-                # if is_root:
-                #     self.root = self
-                subschemas = list(Schema.expand_subschemas(self, object))
-                if subschemas:
-                    # if isinstance(self, Schema):
-                    if len(subschemas) == 1:
-                        self = subschemas[0]
+        if isinstance(self, (bool, Boolean)):
+            self = prior.reflect(Schema())
+            if not self:
+                self = ~self
+        
+        if isinstance(self, (dict, collections.ChainMap)):
+            self = Schema.expand_type_array(self)
+            # if is_root:
+            #     self.root = self
+            subschemas = list(Schema.expand_subschemas(self, object, no_default=no_default))
+            if subschemas:
+                # if isinstance(self, Schema):
+                if len(subschemas) == 1:
+                    self = subschemas[0]
+                else:
+                    # if is_root and object is None:
+                    if is_root and object is EMPTY:
+                        self = self.reflect(Schema(*subschemas, *getattr(self, "maps", [self])))
+                        # self = self.reflect(Schema(*subschemas, self))
+                        # self = Schema(*subschemas)
+                        # return self
+                        # return self.extend(
+                        #     x for x in subschemas if x is not self
+                        # )
                     else:
-                        # if is_root and object is None:
-                        if is_root and object is None:
-                            self = self.reflect(Schema(*subschemas, *getattr(self, "maps", [self])))
-                            # self = Schema(*subschemas)
-                            # return self
-                            # return self.extend(
-                            #     x for x in subschemas if x is not self
-                            # )
-                        else:
-                            self = self.reflect(Schema(*subschemas, self))
-                if is_root:
-                    self.root = self
+                        self = self.reflect(Schema(*subschemas, self))
+            if is_root:
+                self.root = self
 
-            
-                self._schema_expanded = True
+        
+            self._schema_expanded = True
                 
         # if object is not None:
         #     subschema = Schema.expand_one_of(self, object)
@@ -323,6 +400,10 @@ class Expand:
                 return self.maps[0]
 
         return self
+
+    def expand_default(self, object=EMPTY):
+        if object is not EMPTY and object is not None:
+            yield self.reflect(Schema.Dict(default=object))
 
     def expand_all_of(self):
         all = self.get("allOf")
@@ -350,14 +431,14 @@ class Expand:
 
     # ALL schema can be expanded into a oneOf, this is the top level applicator
     # the oneOf expansion is the door into all json schema representation.
-    def expand_one_of(self, object=None):
+    def expand_one_of(self, object=EMPTY):
         """expand the oneOf for this schema, and if an object is provided, return the subschema that validates the object"""
         oneOf = self.get("oneOf")
         if oneOf is Expanded:
             return
         if oneOf and isinstance(oneOf, (list, tuple)):
             yield dict(oneOf=Expanded)
-            if object is None:
+            if object is EMPTY:
                 for subschema in oneOf:   
                     Schema.expand(subschema)
             else:
@@ -365,7 +446,7 @@ class Expand:
                     if Schema.is_valid(subschema, object):
                         yield Schema.expand(subschema)
             
-    def expand_if_then_else(self, object=None):
+    def expand_if_then_else(self, object=EMPTY):
             oneOf = []
             i, t, e = self.get("if"), self.get("then"), self.get("else", Schema.Dict())
             if i is not None and i is not Expanded:
@@ -381,14 +462,13 @@ class Expand:
                 else:
                     yield Schema.expand(e)
 
+    def expand_role(self):
+        from .roles import aria_role
+
+        return self.reflect(Schema(self, role=aria_role(self)))
     def expand_type_array(self):
         type = self.get("type")
         if type and isinstance(type, (list, tuple)):
-            # try:
-            #     bool = type.index("boolean")
-            #     type.pop(bool)
-            # except ValueError:
-            #     pass
             subschemas = []
             if not isinstance(self, Schema):
                 self = Schema(self)
@@ -402,26 +482,29 @@ class Expand:
                         dict(type=t) for t in type
                     ]
                 self.insert(0, expanded)
-                # return self.reflect(Schema(oneOf=[
-                #     Schema(self, type=t) for t in type
-                # ]))
             else:
                 self.insert(0, type=type[0])
+        # elif not type:
+        #     objects = []
+        #     if "default" in self:
+        #         objects.append(Schema.default(self))
+        #     if objects:
+        #         return self.reflect(Schema(infer_schema(*objects), self))
         return self
         
     
 
 class Repr:
-    def repr(self, type=None):
-        if type is None:
-            type = self.type()
-        return f"{type}({self.id()})"
-
+    # def repr(self, type=None):
+    #     if type is None:
+    #         type = self.type()
+    #     return f"{type}({self.id()})"
+    pass
 class Form:
     pass
 
 class Validate:
-
+    ValidationErrors = ValidationErrors
     def errors(self, object, raises=True):
         import jsonschema
         jsonschema._types.bool = jsonschema._keywords.bool = Boolean
@@ -456,6 +539,20 @@ class Validate:
             return self
         raise ValidationError("Expected validation to fail, but it passed", instance=object, schema=self)
 
+    def validate(self, object=EMPTY, raises=True, all=True):
+        """validate the given object against this schema, and return the object with defaults filled in"""
+        if object is EMPTY:
+            object = Schema.default(self)
+        errors = Schema.validator(self).iter_errors(object)
+        if all:
+            errors = list(errors)
+            if errors and raises:
+                raise ValidationErrors(object.id(), errors)
+        elif raises:
+            for error in errors:
+                raise error
+        return errors
+    
     def validate_object(self, object, raises=True):
         import jsonschema
         jsonschema._types.bool = Boolean
@@ -540,7 +637,7 @@ class Ops:
     #     # excise things from a schema
     #     pass
     
-    def __call__(self, object=None, **kwargs):
+    def instance(self, object=None, **kwargs):
         """validate the given object against this schema, and return the object with defaults filled in"""
         if object is None:
             if kwargs:
@@ -552,6 +649,13 @@ class Ops:
             return out
         out.schema = self
         return out
+    __call__ = instance
+
+    def as_default(self, object=EMPTY):
+        """create an instance of this schema from the given object, validating it and filling in defaults"""
+        if object is EMPTY:
+            object = self.default()
+        return self.reflect(Schema(self, default=object))
     
 class Dicts(Object, collections.ChainMap):
     python_type = dict
@@ -598,7 +702,10 @@ class Dicts(Object, collections.ChainMap):
                 return default
             if isinstance(object, (dict, collections.ChainMap)):
                 # object = self.reflect(self.all_dicts(key), key)
-                object = self.all_dicts(key, expand=expand).set_parent(self).set_path(self.path + [key])
+                if key == "default":
+                    object = self.first_dict(key, expand=False).set_parent(self).set_path(self.path + [key])
+                else:
+                    object = self.all_dicts(key, expand=expand).set_parent(self).set_path(self.path + [key])
         else:
             try:
                 object = self[key]
@@ -628,6 +735,16 @@ class Dicts(Object, collections.ChainMap):
             lines = [self[key]] if key in self else []
         return self.reflect(Array(lines), key)
 
+    def first_dict(self, key, expand=True):
+        for map in getattr(self, "maps", [self]):
+            if key in map:
+                value = map[key]
+                if isinstance(value, (dict, collections.ChainMap)):
+                    if expand:
+                        return Schema.expand(value)
+                    return value
+        return None
+    
     def all_dicts(self, key, expand=True):
         from .schemas import Schema
         values = []
@@ -676,16 +793,16 @@ class Dicts(Object, collections.ChainMap):
             self.append(s)
         return self
     
-    def get(self, key, default=None):
+    def get(self, key, default=EMPTY):
         try:
             return self[key]
         except KeyError:
             if self.schema:
-                if default is None:
+                if default is EMPTY:
                     from .schemas import Schema
                     subschema = Schema.property(self.schema, key)
                     return Schema.default(subschema)
-            return default
+            return None if default is EMPTY else default
         
     def __getitem_native__(self, key):
         for map in self.maps:
@@ -706,7 +823,7 @@ class Schema(Core, Metadata, Applicator, Validation, Validate, Expand, Testing, 
     Dicts = Dicts
     _cached_schemas = {}
 
-    def get(self, key, default=None):
+    def get(self, key, default=EMPTY):
         object = super().get(key, default)
         if key == "$ref" and isinstance(object, str) and isinstance(self.root, Schema):
             return object.reflect(Ref(object))
@@ -767,7 +884,7 @@ class Schema(Core, Metadata, Applicator, Validation, Validate, Expand, Testing, 
         """infer the schema from a collection of given objects"""
         import operator
         from .utils import infer_schema
-
+        
         return cls(Object.dispatch(infer_schema(
             *map(operator.methodcaller("builtin"), map(Object.dispatch, objects))
         )))
@@ -782,7 +899,9 @@ class Schema(Core, Metadata, Applicator, Validation, Validate, Expand, Testing, 
         return cls(
             dispatch(value)
         )
-    
+    def role(self):
+        from .roles import aria_role
+        return aria_role(self)
     from .objects import Object, Dict, Boolean, Uri, Ref, Array, Null, String, Expanded
    
 from .objects import dispatch, dispatch_object
