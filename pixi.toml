@@ -1,8 +1,8 @@
 [workspace]
-name = "nbref"
+name = "schema11y"
 version = "0.1.0"
-description = "nbref project"
-authors = ["nbref"]
+description = "schema tools for data and accessibility"
+authors = ["schema11y"]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64", "win-64"]
 
@@ -24,11 +24,11 @@ bs4 = ">=4.14.3,<5"
 python-slugify = ">=8.0.4,<9"
 
 [feature.py.tasks]
-convert = "python -m nbref.convert"
+convert = "python -m schema11y.convert"
 
 [feature.py.tasks.create-notebook]
-cmd = "python -m nbref.convert docs/test-accessibility.ipynb"
-inputs = ["docs/test-accessibility.ipynb", "src/nbref/convert.py", "src/nbref/templates/main.html"]
+cmd = "python -m schema11y.convert docs/test-accessibility.ipynb"
+inputs = ["docs/test-accessibility.ipynb", "src/schema11y/convert.py", "src/schema11y/templates/main.html"]
 outputs = ["docs/test-accessibility.html"]
 
 [tasks.test-a11y]
