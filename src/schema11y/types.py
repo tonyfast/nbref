@@ -1,4 +1,3 @@
-
 from asyncio import exceptions
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -142,12 +141,12 @@ class Subschema:
     
 class Repr:
     def bs4(self, options: Options = None, **opts):
-        from ..html import html_bs4
+        from .html import html_bs4
 
         return list(html_bs4(self, options, **opts))
     
     def html(self, options: Options = None, **opts):
-        from ..html import html_render
+        from . html import html_render
 
         return html_render(self, options, **opts)
 
