@@ -1,0 +1,5 @@
+$dynamicAnchor: meta
+$id: "https://deathbeds.github.io/schema11y/schema/metaschema/core.yaml"
+allOf:
+  - $ref: "http://json-schema.org/draft/2020-12/schema"
+  - $ref: "html.yaml"

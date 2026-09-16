@@ -2,58 +2,13 @@ from asyncio import exceptions
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial, wraps
+from logging import root
+from pathlib import Path
 import typing 
 from toolz import pipe, compose_left as compose
 
 class ValidationError(ExceptionGroup):
     pass
-
-def el_from_tag(tag, *children, **attrs):
-    import bs4
-    if isinstance(tag, str):
-        tag = bs4.Tag(name=tag)
-    for child in children:
-        if isinstance(child, typing.Generator):
-            child = list(child)
-        if isinstance(child, list):
-            for subchild in child:
-                tag.append(subchild)
-        else:
-            tag.append(child)
-    tag.attrs.update(attrs)
-    return tag
-
-def el_from_selector(selection, *children, first=True, **attrs):
-    import cssselect, bs4
-    if isinstance(selection, bs4.Tag):
-        return el_from_tag(selection, *children, **attrs)
-    if isinstance(selection, str):
-        selection = cssselect.parse(selection)
-
-    if isinstance(selection, list):
-        elements = []
-        for element in selection:
-            element = el_from_selector(element, *children, **attrs)
-            if first:
-                return element
-            elements.append(element)
-        return elements
-        
-
-    elif isinstance(selection, cssselect.Selector):
-        return el_from_selector(selection.parsed_tree, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.Element):
-        return el_from_tag(selection.element, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.Hash):
-        attrs.update(id=selection.id)
-        return el_from_selector(selection.selector, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.Class):
-        attrs.setdefault("class", []).append(selection.class_name)
-        return el_from_selector(selection.selector, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.CombinedSelector):
-        return el_from_selector(selection.selector, el_from_selector(selection.subselector), *children, **attrs)
-    raise ValueError(f"Unsupported selection type: {selection}")
-element = el_from_selector
 
 class Pointer(list):
     """a json pointer that can be flexibility formatted."""
@@ -61,6 +16,14 @@ class Pointer(list):
     def __init__(self, *args, **kwargs):
         if args == (None,):
             args = ()
+        if args:
+            if isinstance(args[0], str):
+                from jsonpointer import JsonPointer
+                print(args[0])
+                ptr = args[0]
+                if not ptr.startswith("/"):
+                    ptr = "/" + ptr
+                args =  (JsonPointer(ptr).parts, ) + args[1:]
         super().__init__(*args, **kwargs)
         if not self:
             self.extend(["#"])
@@ -81,6 +44,9 @@ class Pointer(list):
         if sep == "/":
             return str(self.pointer())
         return str(self.pointer()).replace("/", sep)
+
+    def raw(self, sep=""):
+        return sep.join(map(str, self))
     
     def __str__(self):
         return self.string()
@@ -89,6 +55,10 @@ class EMPTY:
     pass
 
 class Subschema:
+    from .referencing import default_registry
+    REGISTRY = default_registry()
+    del default_registry
+
     def __new__(cls, root=EMPTY, path=None, parent=None, **kwargs):
 
                         
@@ -111,11 +81,28 @@ class Subschema:
         self.path = Pointer(path)
         self.parent = parent
 
-    def  object(self):
+    def object(self):
         return self.path.resolve(self.root)
 
     def expand(self):
-        return Schema([self])
+        return Schema([self]).override(*self.expand_ref())
+
+    def expand_ref(self):
+        ref = self.get("$ref")
+
+        if ref:
+            root = self.root.get("@vocab", self.root.get("$id"))
+            if root is None:
+                from referencing import Resource, jsonschema
+                resolver = self.REGISTRY.resolver_with_root(Resource(self.root, jsonschema.DRAFT202012))
+            elif isinstance(ref, str) and ref.startswith("#"):
+                return [Subschema(self.root, path=Pointer(ref), parent=self.parent)]
+            else:
+                resolver = self.REGISTRY.resolver(root)
+            contents =resolver.lookup(ref).contents
+            # relative pointers need the root reattached to their schema in fact this fucntion should export shcema
+            return [contents] 
+        return []
 
     def get(self, key, default=None):
         return self.path.add(key).resolve(self.root, default=default)
@@ -125,19 +112,19 @@ class Subschema:
 
     @classmethod
     def infer(cls, *objects):
-        from genson import SchemaBuilder
-        builder = SchemaBuilder()
-        for obj in objects:
-            builder.add_object(obj)
-        schema = builder.to_schema()
-        schema.pop("$schema", None)
-        return cls(schema)
+        from .utils import infer_schema
+        return cls(infer_schema(*objects))
 
     def child(self, *path):
         return Subschema(root=self.root, path=self.path.add(*path), parent=self)
 
     def __invert__(self):
         return Subschema({"not": self.root})
+
+    @classmethod
+    def resolve(cls, object):
+        return cls.REGISTRY._retrieve(object).contents
+
     
 class Repr:
     def bs4(self, options: Options = None, **opts):
@@ -162,9 +149,15 @@ class Schema(Repr):
 
     @classmethod
     def from_file(cls, filepath):
-        with open(filepath, "r") as f:
-            return cls.from_string(f.read())
-        
+        return cls(Subschema.REGISTRY._retrieve(filepath).contents)
+
+    from_id = classmethod(from_file.__func__)
+    def load(self, object, id=None, type=None, base=None):
+        #  this will breka when object reutrns a list. need to hand this
+        # damn base uri somehow
+        schema = Subschema.REGISTRY._retrieve(object, key="@base").contents
+        return self.linked(schema, id=id, type=type)
+    
     def __init__(self, schemas=None, **kwargs):
         self.schemas = []
         if schemas is None:
@@ -202,15 +195,14 @@ class Schema(Repr):
             value = subschema.get(key, EMPTY)
             if value is not EMPTY:
                 schema.append(value)
-        return schema
+        return schema 
 
-    def default(self):
-        default = self.get("default", EMPTY)
-        if default is EMPTY:
+    def default(self, default=EMPTY):
+        value = self.get("default", default)
+        if value is EMPTY:
             return self._default()
-        return default
-
-    def _default(self):
+        return value
+    def _default(self, default=EMPTY):
         enum = self.get("enum")
         if enum:
             return enum[0]
@@ -232,9 +224,17 @@ class Schema(Repr):
         return EMPTY
 
     def property(self, key):
-        value = self.value()
-        schema = Schema().linked(value.get(key, EMPTY), self.aid().add(key), self.atype().add("properties", key))
-        for subschema in self.schemas:
+        value = self.value(EMPTY)
+        try:
+            value = value[key]
+        except (KeyError, TypeError):
+            value = EMPTY
+        schema = Schema().linked(
+            value, self.aid().add(key), self.atype().add("properties", key),
+            self.abase(),
+            self.avocab(),
+        )
+        for subschema in self.expand_all().schemas:
             properties = subschema.get("properties", {})
             if key in properties:
                 schema.append(subschema.child("properties", key))
@@ -244,28 +244,48 @@ class Schema(Repr):
                     schema.append(subschema.child("additionalProperties"))
         return schema
 
+    
+
     def index(self, index):
         value = self.value()
-        schema = Schema().linked(value[index], self.aid().add(index), self.atype().add("items", index))
-        for subschema in self.schemas:
+        try:
+            value = value[index]
+        except (IndexError, TypeError):
+            value = EMPTY
+        schema = Schema().linked(value, self.aid().add(index), self.atype().add("items"), self.abase(), self.avocab())
+        for subschema in self.expand_all().schemas:
             prefixItems = subschema.get("prefixItems", [])
             if index < len(prefixItems):
                 schema.append(subschema.child("prefixItems", index))
             else:
                 items = subschema.get("items", None)
                 if items is not None:
-                    schema.append(subschema.child("items"))
+                    schema.append(subschema.child("items").expand())
         return schema
     
-    def linked(self, value=EMPTY, id=None, type=None):
+    def linked(self, value=EMPTY, id=None, type=None, base=None, vocab=None):
         linked_data = dict()
-        if value is not EMPTY:
+        if value is not EMPTY and value is not None:
             linked_data["@value"] = value
         if id is not None:
             linked_data["@id"] = Pointer(id)
         if type is not None:
             linked_data["@type"] = Pointer(type)
+        if base is not None:
+            linked_data["@base"] = base
+        if vocab is not None:
+            linked_data["@vocab"] = vocab
         return self.override(**linked_data)
+    
+    def expand_all(self):
+        schema = Schema()
+        for i, subschema in enumerate(self.schemas):
+            allOf = subschema.get("allOf", None)
+            if allOf is not None:
+                for j, subsubschema in enumerate(allOf):
+                    schema.append(*subschema.child("allOf", j).expand().schemas)
+                break
+        return self.override(schema)
     
     def expand(self):
         return self
@@ -354,6 +374,12 @@ class Schema(Repr):
     def atype(self, *path):
         return Pointer(self.get("@type")).add(*path)
 
+    def abase(self, *path):
+        return self.get("@base")
+
+    def avocab(self, *path):
+        return self.get("@vocab")
+
     def types(self):
         types = self.get("type")
         if isinstance(types, str):
@@ -366,10 +392,10 @@ class Schema(Repr):
             return [t]
         return types
 
-    def value(self):
+    def value(self, default=EMPTY):
         value = self.get("@value", EMPTY)
         if value is EMPTY:
-            value = self.default()
+            value = self.default(default)
         return value
 
 

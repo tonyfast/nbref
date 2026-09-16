@@ -1,0 +1,85 @@
+type: object
+properties:
+  metadata:
+    description: The metadata of the notebook.
+    type: object
+  cells:
+    description: The cells of the notebook.
+    type: array
+    items:
+      $ref: '#/$defs/cell'
+  nbformat:
+    description: The version of the notebook format.
+    type: integer
+  nbformat_minor:
+    description: The minor version of the notebook format.
+    type: integer
+additionalProperties: false
+$defs:
+  cell:
+    type: object
+    properties:
+      id:
+        description: The unique identifier of the cell.
+        type: string
+      cell_type:
+        description: The type of the cell.
+        enum:
+          - code
+          - markdown
+          - raw
+      execution_count:
+        description: The execution count of the cell.
+        type: integer
+        default: -1
+      source:
+        description: The source content of the cell.
+        type: [string, array]
+        items:
+          type: string
+      metadata:
+        description: The metadata of the cell.
+        type: object
+      attachments:
+        description: The attachments of the cell.
+        type: object
+      outputs:
+        description: The outputs of the cell.
+        type: array
+        items:
+          $ref: '#/$defs/output'
+  output:
+    type: object
+    properties:
+      output_type:
+        description: The type of the output.
+        enum:
+          - execute_result
+          - display_data
+          - stream
+          - error
+      data:
+        description: The data of the output.
+        type: object
+      metadata:
+        description: The metadata of the output.
+        type: object
+      text:
+        description: The text content of the output.
+        type: [string, array]
+        items:
+          type: string
+      name:
+        description: The name of the output.
+        type: string
+      ename:
+        description: The error name of the output.
+        type: string
+      evalue:
+        description: The error value of the output.
+        type: string
+      traceback:
+        description: The traceback of the output.
+        type: array
+        items:
+          type: string

@@ -1,0 +1,26 @@
+description: html schema attributes
+$comment: |
+  the file supplements the core Json Schema with html attributes.
+  the attributes are descriptive, used for representation; they do not add any validation logic.
+properties:
+  role:
+    description: The ARIA role of the HTML element.
+    type: string
+  class:
+    description: The CSS class of the HTML element.
+    type: [string, array]
+  attrs:
+    description: The HTML attributes of the element.
+    type: object
+  data:
+    description: The data attributes of the HTML element.
+    type: object
+  item:
+    description: The microdata attributes of the HTML element.
+    type: object
+  style:
+    description: The inline style of the HTML element.
+    type: object
+  "on":
+    description: The event handler attributes of the HTML element.
+    type: object

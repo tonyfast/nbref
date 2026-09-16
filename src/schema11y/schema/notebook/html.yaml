@@ -1,0 +1,73 @@
+type: object
+properties:
+  metadata:
+    role: dialog
+  cells:
+    description: The cells of the notebook.
+    type: array
+    items:
+      $ref: '#/$defs/cell'
+  nbformat: {}
+  nbformat_minor: {}
+additionalProperties: false
+$defs:
+  cell:
+    parent:
+      role: group
+    properties:
+      id:
+        "@type": "@id"
+      cell_type: 
+        enum:
+          - code
+          - markdown
+          - raw
+          - unknown
+      execution_count: {}
+      source:
+        parent:
+          role: group
+        role: textbox
+        contentSchema:
+          role: code
+        aria:
+          multiline: true
+      metadata:
+        parent: 
+          role: dialog
+      attachments:
+        parent:
+          role: dialog
+      outputs:
+        parent: 
+          role: group
+        items:
+          $ref: '#/$defs/output'
+  output:
+    type: object
+    properties:
+      output_type:
+        description: The type of the output.
+        enum:
+          - execute_result
+          - display_data
+          - stream
+          - error
+      data: {}
+      metadata:
+        parent:
+          role: dialog
+      text:
+        tagName: samp
+      name:
+        tagName: span
+      ename:
+        role: paragraph
+      evalue:
+        description: The error value of the output.
+        type: string
+      traceback:
+        description: The traceback of the output.
+        type: array
+        items:
+          type: string

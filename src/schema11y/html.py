@@ -7,64 +7,9 @@ import typing
 from numpy import isin
 from toolz import pipe, compose_left as compose
 from .types import Schema, Subschema, EMPTY
-
+from .utils import el_from_selector
 class ValidationError(ExceptionGroup):
     pass
-
-def el_from_tag(tag, *children, **attrs):
-    import bs4
-    if isinstance(tag, str):
-        tag = bs4.Tag(name=tag)
-    for child in children:
-        if isinstance(child, typing.Generator):
-            child = list(child)
-        if isinstance(child, list):
-            for subchild in child:
-                tag.append(subchild)
-        else:
-            tag.append(child)
-    style = attrs.get("style")
-    if style:
-        styles = ""
-        for key, value in style.items():
-            styles += f"{key}: {value}; "
-        attrs["style"] = styles
-        
-
-    tag.attrs.update(attrs)
-    return tag
-
-def el_from_selector(selection, *children, first=True, **attrs):
-    import cssselect, bs4
-    if isinstance(selection, bs4.Tag):
-        return el_from_tag(selection, *children, **attrs)
-    if isinstance(selection, str):
-        selection = cssselect.parse(selection)
-
-    if isinstance(selection, list):
-        elements = []
-        for element in selection:
-            element = el_from_selector(element, *children, **attrs)
-            if first:
-                return element
-            elements.append(element)
-        return elements
-        
-
-    elif isinstance(selection, cssselect.Selector):
-        return el_from_selector(selection.parsed_tree, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.Element):
-        return el_from_tag(selection.element, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.Hash):
-        attrs.update(id=selection.id)
-        return el_from_selector(selection.selector, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.Class):
-        attrs.setdefault("class", []).append(selection.class_name)
-        return el_from_selector(selection.selector, *children, **attrs)
-    elif isinstance(selection, cssselect.parser.CombinedSelector):
-        return el_from_selector(selection.selector, el_from_selector(selection.subselector), *children, **attrs)
-    raise ValueError(f"Unsupported selection type: {selection}")
-element = el_from_selector
 
 role_mapping = dict()
 content_mapping = dict()
@@ -77,13 +22,14 @@ class Options:
     role: dict = field(default_factory=role_mapping.copy)
     content: dict = field(default_factory=content_mapping.copy)
     format: dict = field(default_factory=format_mapping.copy)
+    patch: dict = field(default_factory=dict)
+    # patch schema
     tag: dict = field(default_factory=tag_mapping.copy)
     el: callable = field(default_factory=lambda: el_from_selector)
     validate: bool = True
     input: bool = True
     output: bool = True
     heading: int = 1
-
     def enter(self, **kwargs):
         @contextmanager
         def wrapper():
@@ -157,22 +103,24 @@ def html_bs4(schema: Schema, options: Options, *children, **opts):
     options.evaluated = []
     yield from html_root(schema, options)
 
+def html_patch(schema: Schema, options: Options = Options):
+    id = schema.atype()
+    print(str(id), str(id) in options.patch)
+    patches = options.patch.get(str(id)[1:])
+    if patches:
+        patched = patches(schema, options)
+        if patched:
+            schema = patched
+    return schema
+
+
 def html_root(schema: Schema, options: Options, *children, **attrs):
+    schema = html_patch(schema, options)
     yield from html_parent(schema, options, *html_core(schema, options, *children))
 
 def html_parent(schema: Schema, options: Options, *children):
     parent = schema.subschema("parent")
     if parent.schemas:
-        metadata = dict()
-        title = schema.get("title", EMPTY)
-        if title is not EMPTY:
-            metadata["title"] = title
-        description = schema.get("description", EMPTY)
-        if description is not EMPTY:
-            metadata["description"] = description
-        examples = schema.get("examples", EMPTY)
-        if examples is not EMPTY:
-            metadata["examples"] = examples
         with options.enter(output=False):
             yield from html_root(parent.linked(id=schema.aid("parent")), options, *children)
     else:
@@ -194,7 +142,7 @@ def html_all_of(schema: Schema, options: Options, *children):
     if all_of:
         for i, subschema in enumerate(all_of):
             yield from html_one_of(
-                schema.override(subschema, allOf=[])
+                schema.override(schema.child("allOf", i), allOf=[])
                 .linked(type=schema.atype("allOf",  i)), 
                 options, *children
             )
@@ -208,10 +156,13 @@ def html_one_of(schema: Schema, options: Options, *children):
             types.remove("integer")
     one_of = schema.get("oneOf")
     has_one_of = bool(one_of)
+
     if has_one_of:
-        one_of = [schema.override(subschema, oneOf=None) for subschema in one_of]
+        one_of = [schema.override(schema.child("oneOf", i), oneOf=None) for i, subschema in enumerate(one_of)]
     else:
-        if len(types) > 1:
+        role = schema.role()
+        
+        if not role and len(types) > 1:
             one_of = [schema.override(type=t) for t in types]
         else:
             one_of = [schema]
@@ -229,11 +180,14 @@ def html_one_of(schema: Schema, options: Options, *children):
                 if "array" not in t and "object" not in t:
                     validating.validate()
 
-            subschema = schema.override(subschema).linked(
-                type=schema.atype("oneOf", i),
-            )
+            if has_one_of:
+
+                subschema = schema.override(schema.child("oneOf", i)).linked(
+                    type=schema.atype("oneOf", i),
+                )
             options.el(item, html_validator(subschema, options, *children))
         except ExceptionGroup as exception:
+            print(exception, exception.exceptions)
             exceptions.append(exception)
             subschema = schema.override(subschema).linked(
                 subschema.default(), type=schema.atype("oneOf", i),
@@ -280,7 +234,11 @@ def html_exception(exception, options):
 def html_content(schema: Schema, options: Options, *children, **attrs):
     content_schema = schema.subschema("contentSchema")
     if content_schema:
-        return html_core(content_schema, options, *children, **attrs)
+        with options.enter(input=True, output=False, validate=False):
+            yield from html_root(content_schema.linked(
+                schema.value(), id=schema.aid(), type=schema.atype("contentSchema"),
+            ), options, *children, **attrs)
+        return
     
     content_type = schema.get("contentMediaType")
     callable = options.content.get(content_type)
@@ -298,6 +256,7 @@ def html_validator(schema: Schema, options: Options, *children):
 def html_role(schema: Schema, options: Options, *children):
     tag = schema.get("tagName")
     if tag:
+        print(tag)
         callable = options.tag.get(tag)
         if callable:
             yield from callable(schema, options, *children)
@@ -322,18 +281,22 @@ def html_list(schema: Schema, options: Options, *children, **attrs):
     ol = options.el("ol.array")
     for i, item in enumerate(object):
         subschema = schema.index(i)
-
-        item = options.el("li.array", html_root(subschema, options))
+        id = schema.aid()
+        link = options.el("a", html_title(subschema, options), href=f"#{id}")
+        item = options.el("li.array", link, html_root(subschema, options), id=str(id))
         options.evaluated.append(str(subschema.aid()))
         options.el(ol, item)
     yield ol
+
 @attrs
 def html_associationlist(schema: Schema, options: Options, *children, **attrs):
     object = schema.value()
     ul = options.el("ul")
     for key in object:
         subschema = schema.property(key)
-        item = options.el("li", html_root(subschema, options))
+        id = schema.aid()
+        link = options.el("a", html_title(subschema, options), href=f"#{id}")
+        item = options.el("li", link, html_root(subschema, options), id=str(id))
         options.evaluated.append(str(subschema.aid()))
         options.el(ul, item)
     yield ul
@@ -360,16 +323,17 @@ def html_paragraph(schema: Schema, options: Options, *children, **attrs):
 
 @attrs
 def html_textbox(schema: Schema, options: Options, *children, **attrs):
-    expanded = schema.subschema("aria").get("expanded", False)
+    expanded = schema.subschema("aria").get("multiline", False)
     if expanded:
-        yield from html_textarea(schema, options)
+        yield from html_textarea(schema, options, **attrs)
         return
-    yield from html_label(schema, options)
-    yield from html_plain(schema, options)
+    yield from html_label(schema, options, **attrs)
+    attrs["value"] = unified_string(schema.value())
+    yield options.el("input", type="text", **attrs)
 
 def html_textarea(schema: Schema, options: Options, *children, **attrs):
-    yield from html_label(schema, options)
-    yield options.el("textarea", unified_string(schema.value()))
+    yield from html_label(schema, options, **attrs)
+    yield options.el("textarea", unified_string(schema.value()), **attrs)
 
 def html_label(schema: Schema, options: Options, *children, **attrs):
     label_attrs = {"for": attrs.get("id")}
@@ -384,9 +348,14 @@ def html_title(schema: Schema, options: Options, *children, **attrs):
 
 def html_metadata(schema: Schema, options: Options, *children, **attrs):
     yield from html_description(schema, options)
+    yield from html_examples(schema, options)
 
 def html_description(schema: Schema, options: Options, *children, **attrs):
     yield options.el("p.description", unified_string(schema.value()))
+
+def html_examples(schema: Schema, options: Options, *children, **attrs):
+    for example in schema.get("examples", []):
+        yield options.el("pre.example", unified_string(example))
 
 @attrs
 def html_number(schema: Schema, options: Options, *children, **attrs):
@@ -400,7 +369,7 @@ def html_number(schema: Schema, options: Options, *children, **attrs):
 @attrs
 def html_checkbox(schema: Schema, options: Options, *children, **attrs):
     yield from html_plain(schema, options)
-    yield from html_label(schema, options)
+    yield from html_label(schema, options, **attrs)
 
 @attrs  
 def html_landmark(schema: Schema, options: Options, *children, tag="section", **attrs):
@@ -465,7 +434,11 @@ def html_time(schema: Schema, options: Options, *children, **attrs):
     
 def html_code(schema: Schema, options: Options, *children, **attrs):
     value = schema.value()
-    yield options.el("code", value, *children, **attrs)
+    pre = options.el("pre>code")
+    options.el(pre.code, unified_string(value), *children, **attrs)
+    yield pre
+
+
 
 def html_fieldset(schema: Schema, options: Options, *children, **attrs):
     legend = options.el("legend", html_title(schema, options))
@@ -509,12 +482,14 @@ role_mapping.update(
     select=html_select,
     spinbutton=html_number,
     text=html_plain,
+    textbox=html_textbox,
     time=html_time,
 )
 content_mapping[None] = html_plain
 
 tag_mapping.update(
     aside=role_mapping["complementary"],
+    code=role_mapping["code"],
     footer=role_mapping["contentinfo"],
     details=role_mapping["group"],
     dialog=role_mapping["dialog"],  
