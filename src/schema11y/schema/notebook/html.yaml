@@ -1,3 +1,4 @@
+$dynamicAnchor: notebook
 type: object
 properties:
   metadata:
@@ -38,6 +39,8 @@ $defs:
       attachments:
         parent:
           role: dialog
+        additionalProperties: 
+          $ref: content.yaml
       outputs:
         parent: 
           role: group
@@ -53,7 +56,8 @@ $defs:
           - display_data
           - stream
           - error
-      data: {}
+      data:
+        $ref: content.yaml
       metadata:
         parent:
           role: dialog

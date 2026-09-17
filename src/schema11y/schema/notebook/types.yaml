@@ -1,3 +1,4 @@
+$dynamicAnchor: notebook
 type: object
 properties:
   metadata:
