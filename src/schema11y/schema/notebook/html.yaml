@@ -1,8 +1,36 @@
 $dynamicAnchor: notebook
 type: object
+contentMediaType: "application/x-ipynb+json"
 properties:
   metadata:
-    role: dialog
+    type: object
+    allOf:
+    - properties:
+          title: 
+            type: string
+            default: ""
+          description:
+            type: string
+            default: ""
+          authors:
+            type: array
+            items:
+              type: string
+            default: []
+          updated_at:
+            type: string
+            format: date-time
+            default: ""
+          created_at:
+            type: string
+            format: date-time
+            default: ""
+    - unevaluatedProperties: true
+      parent:
+        title: runtime, language, and other information
+        role: group
+        aria:
+          expanded: false
   cells:
     description: The cells of the notebook.
     type: array
@@ -15,37 +43,39 @@ $defs:
   cell:
     parent:
       role: group
-    properties:
-      id:
-        "@type": "@id"
-      cell_type: 
-        enum:
-          - code
-          - markdown
-          - raw
-          - unknown
-      execution_count: {}
-      source:
-        parent:
-          role: group
-        role: textbox
-        contentSchema:
-          role: code
-        aria:
-          multiline: true
-      metadata:
-        parent: 
-          role: dialog
-      attachments:
-        parent:
-          role: dialog
-        additionalProperties: 
-          $ref: content.yaml
-      outputs:
-        parent: 
-          role: group
-        items:
-          $ref: '#/$defs/output'
+    allOf:
+      - properties:
+          id:
+            "@type": "@id"
+          cell_type: 
+            enum:
+              - code
+              - markdown
+              - raw
+              - unknown
+          execution_count: {}
+      - properties:
+          source:
+            parent:
+              role: group
+            role: textbox
+            contentSchema:
+              role: code
+            aria:
+              multiline: true
+          metadata:
+            parent: 
+              role: dialog
+          attachments:
+            parent:
+              role: dialog
+            additionalProperties: 
+              $ref: content.yaml
+          outputs:
+            parent: 
+              role: group
+            items:
+              $ref: '#/$defs/output'
   output:
     type: object
     properties:

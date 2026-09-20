@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from functools import partial, wraps
 from logging import root
 from pathlib import Path
-import typing 
+import typing
+from urllib.parse import urlparse 
 from toolz import pipe, compose_left as compose
 
 class ValidationError(ExceptionGroup):
@@ -19,7 +20,6 @@ class Pointer(list):
         if args:
             if isinstance(args[0], str):
                 from jsonpointer import JsonPointer
-                print(args[0])
                 ptr = args[0]
                 if not ptr.startswith("/"):
                     ptr = "/" + ptr
@@ -84,8 +84,26 @@ class Subschema:
     def object(self):
         return self.path.resolve(self.root)
 
-    def expand(self):
-        return Schema([self]).override(*self.expand_ref())
+        
+    def expand_subschema(self):
+        ref = self.expand_ref()
+        dynamic = self.expand_dynamic_ref()
+        self = dynamic if dynamic else Schema([self])
+        if ref: 
+            self = self.override(ref)
+        return self
+
+    expand = expand_subschema
+    
+    def expand_dynamic_ref(self):
+        dynamic_ref = self.get("$dynamicRef")
+        if dynamic_ref:
+            root = self
+            while root.parent is not None:
+                root = root.parent
+            root = root.root.get("@vocab", self.root.get("$id"))
+            contents= self.REGISTRY.resolver(root).lookup(dynamic_ref).contents
+            return Subschema(contents).expand()
 
     def expand_ref(self):
         ref = self.get("$ref")
@@ -96,13 +114,14 @@ class Subschema:
                 from referencing import Resource, jsonschema
                 resolver = self.REGISTRY.resolver_with_root(Resource(self.root, jsonschema.DRAFT202012))
             elif isinstance(ref, str) and ref.startswith("#"):
-                return [Subschema(self.root, path=Pointer(ref), parent=self.parent)]
+                return Subschema(self.root, path=Pointer(ref), parent=self.parent).expand()
             else:
                 resolver = self.REGISTRY.resolver(root)
             contents =resolver.lookup(ref).contents
-            # relative pointers need the root reattached to their schema in fact this fucntion should export shcema
-            return [contents] 
-        return []
+            # should pull over fragments for the path
+            parsed = urlparse(ref)
+            return Subschema(contents, Pointer("#" + parsed.fragment), self).expand()
+            # relative pointers need the root reattached to their schema in fact this fucntion should export shcema 
 
     def get(self, key, default=None):
         return self.path.add(key).resolve(self.root, default=default)
@@ -156,7 +175,10 @@ class Schema(Repr):
         #  this will breka when object reutrns a list. need to hand this
         # damn base uri somehow
         schema = Subschema.REGISTRY._retrieve(object, key="@base").contents
-        return self.linked(schema, id=id, type=type)
+        # for the notebook we should put the file or root directly in the document.
+        # it could be a first cell of the document when using nested notebooks.
+        # we'd retrieve a notebook and put it in a notebook
+        return self.linked(schema, id=id, type=type, base=schema.pop("@base"))
     
     def __init__(self, schemas=None, **kwargs):
         self.schemas = []
@@ -166,13 +188,22 @@ class Schema(Repr):
             schemas = [schemas]
         if kwargs:
             schemas.insert(0, kwargs)
+        ids = set()
         for i, schema in enumerate(schemas):
             if isinstance(schema, Schema):
-                self.schemas.extend(schema.schemas)
+                # self.schemas.extend(schema.schemas)
+                for schema in schema.schemas:
+                    i = id(schema)
+                    if i not in ids:
+                        self.schemas.append(schema)
+                        ids.add(id(schema))
                 continue
             elif isinstance(schema, dict):
                 schema = Subschema(schema)
-            self.schemas.append(schema)
+            i = id(schema)
+            if i not in ids:
+                ids.add(i)
+                self.schemas.append(schema)
 
     def __repr__(self):
         return repr(self.schemas)
@@ -194,14 +225,15 @@ class Schema(Repr):
         for subschema in self.schemas:
             value = subschema.get(key, EMPTY)
             if value is not EMPTY:
-                schema.append(value)
-        return schema 
+                schema.append(subschema.child(key))
+        return schema
 
     def default(self, default=EMPTY):
         value = self.get("default", default)
         if value is EMPTY:
             return self._default()
         return value
+    
     def _default(self, default=EMPTY):
         enum = self.get("enum")
         if enum:
@@ -218,12 +250,21 @@ class Schema(Repr):
         elif type == "array":
             return list()
         elif type == "object":
-            return dict()
+            object = dict()
+            return object
         elif type == "null":
             return None
         return EMPTY
 
-    def property(self, key):
+    def property(self, *key):
+        if len(key) > 1:
+            for k in key:
+                if isinstance(k, int):
+                    self = self.index(k)
+                else:
+                    self = self.property(k)
+            return self
+        key, *_ = key
         value = self.value(EMPTY)
         try:
             value = value[key]
@@ -234,16 +275,20 @@ class Schema(Repr):
             self.abase(),
             self.avocab(),
         )
-        for subschema in self.expand_all().schemas:
-            properties = subschema.get("properties", {})
+        for subschema in self.expand().expand_all().schemas:
+            properties = subschema.get("properties") or {}
             if key in properties:
-                schema.append(subschema.child("properties", key))
+                schema.append(subschema.child("properties", key).expand())
             else:
+                # additional properties refer to the whole schema
+                # properties can be nested in additional properties
+                # so we have to try again. you learn this using the json meta schema
                 additional = subschema.get("additionalProperties", EMPTY)
                 if additional is not EMPTY:
-                    schema.append(subschema.child("additionalProperties"))
+                    additional = subschema.child("additionalProperties").expand()
+                    schema.append(additional.property(key))
+                    schema.append(additional)
         return schema
-
     
 
     def index(self, index):
@@ -252,11 +297,13 @@ class Schema(Repr):
             value = value[index]
         except (IndexError, TypeError):
             value = EMPTY
-        schema = Schema().linked(value, self.aid().add(index), self.atype().add("items"), self.abase(), self.avocab())
-        for subschema in self.expand_all().schemas:
+        schema = Schema().linked(
+            value, self.aid().add(index), self.atype().add("items"), self.abase(), self.avocab()
+        )
+        for subschema in self.expand().expand_all().schemas:
             prefixItems = subschema.get("prefixItems", [])
             if index < len(prefixItems):
-                schema.append(subschema.child("prefixItems", index))
+                schema.append(subschema.child("prefixItems", index).expand())
             else:
                 items = subschema.get("items", None)
                 if items is not None:
@@ -279,16 +326,23 @@ class Schema(Repr):
     
     def expand_all(self):
         schema = Schema()
-        for i, subschema in enumerate(self.schemas):
-            allOf = subschema.get("allOf", None)
-            if allOf is not None:
-                for j, subsubschema in enumerate(allOf):
-                    schema.append(*subschema.child("allOf", j).expand().schemas)
-                break
+        for key in ("anyOf", "allOf"):
+            # i only added this loop to support a version of json ld schema
+            for i, subschema in enumerate(self.schemas):
+                subschemas = subschema.get(key, None)
+                if subschemas is not None:
+                    for j, subsubschema in enumerate(subschemas):
+                        schema.append(
+                            subschema.child(key, j).expand().expand_all()
+                        )
+                    # break
         return self.override(schema)
     
     def expand(self):
-        return self
+        schema = Schema()
+        for subschema in self.schemas:
+            schema.append(subschema.expand())
+        return schema
 
     def insert(self, index, *other):
         for schema in reversed(other):
@@ -367,7 +421,9 @@ class Schema(Repr):
             if "boolean" in types:
                 return "checkbox"
         
-
+    def id(self, *path):
+        return (self.abase() or "/#") + str(self.aid(*path)).removeprefix("/#")
+    
     def aid(self, *path):
         return Pointer(self.get("@id")).add(*path)
 
@@ -396,6 +452,10 @@ class Schema(Repr):
         value = self.get("@value", EMPTY)
         if value is EMPTY:
             value = self.default(default)
+
+        if isinstance(value, dict):
+            for k, v in self.default({}).items():
+                value.setdefault(k, v)
         return value
 
 
@@ -424,3 +484,22 @@ class Schema(Repr):
         if exceptions:
             raise ExceptionGroup("Validation errors", exceptions)
         return self
+
+    def pipe(self, callable, *args, **kwargs):
+        return callable(self, *args, **kwargs)
+
+    def pipes(self, *callables, **kwargs):
+        args = self,
+        for callable in callables:
+            args, kwargs = (callable(*args, **kwargs),), {}
+        return args[0]
+
+    def drop(self, n=None):
+        if n is None:
+            return self
+        return self.linked(self.value()[n:])
+
+    def take(self, n=None):
+        if n is None:
+            return self
+        return self.linked(self.value()[:n])

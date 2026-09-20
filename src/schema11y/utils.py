@@ -13,7 +13,7 @@ def parse_yaml(string):
     import yaml
     return yaml.safe_load(string)
 
-def el_from_tag(tag, *children, **attrs):
+def el_from_tag(tag, *children, raw=False, **attrs):
     import bs4
     if isinstance(tag, str):
         tag = bs4.Tag(name=tag)
@@ -36,8 +36,13 @@ def el_from_tag(tag, *children, **attrs):
     tag.attrs.update(attrs)
     return tag
 
-def el_from_selector(selection, *children, first=True, **attrs):
+def el_from_selector(selection, *children, first=True, raw=False, **attrs):
     import cssselect, bs4
+    if raw:
+        soup = bs4.BeautifulSoup(selection, "html.parser")
+        if soup.body:
+            return soup.body.children
+        return soup
     if isinstance(selection, bs4.Tag):
         return el_from_tag(selection, *children, **attrs)
     if isinstance(selection, str):

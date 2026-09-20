@@ -27,5 +27,4 @@ properties:
         contentMediaType: text/html
     application/x-ipynb+json:
         readOnly: true
-        contentSchema:
-          $dynamicRef: "#notebook"
+        contentMediaType: application/x-ipynb+json
