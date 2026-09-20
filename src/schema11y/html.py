@@ -299,6 +299,7 @@ def html_exception(exception, options):
 def html_validator(schema: Schema, options: Options, *children):
     yield from html_role(schema, options, *children)
     yield from html_dependent_schema(schema, options, *children)
+    yield from html_metadata(schema, options, *children)
 
 def html_role(schema: Schema, options: Options, *children):
     tag = schema.get("tagName")
@@ -438,7 +439,8 @@ def html_metadata(schema: Schema, options: Options, *children, **attrs):
     yield from html_examples(schema, options)
 
 def html_description(schema: Schema, options: Options, *children, **attrs):
-    yield options.el("p.description", unified_string(schema.value()))
+    description = schema.get("description", "")
+    yield options.el("p.description", unified_string(description), id=schema.id("description"))
 
 def html_examples(schema: Schema, options: Options, *children, **attrs):
     for example in schema.get("examples", []):
@@ -455,7 +457,9 @@ def html_number(schema: Schema, options: Options, *children, **attrs):
 
 @attrs
 def html_checkbox(schema: Schema, options: Options, *children, **attrs):
-    yield from html_plain(schema, options)
+    if schema.value:
+        attrs["checked"] = ""
+    yield options.el("input", type="checkbox")
     yield from html_label(schema, options, **attrs)
 
 @attrs  
