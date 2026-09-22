@@ -573,6 +573,13 @@ def html_image(schema: Schema, options: Options, *children, **attrs):
     data = F"data:{mimetype};base64,{value}"
     yield options.el("img", *children, src=data, **attrs)
 
+def html_uri_list(schema: Schema, options: Options, *children, **attrs):
+    # needs work
+    value = unified_string(schema.value())
+    uris = value.splitlines()
+    for uri in filter(str.strip, uris):
+        yield options.el("a", uri, href=uri, *children, **attrs)
+
 role_mapping[None] = html_plain
 role_mapping.update(
     associationlist=html_associationlist,
@@ -608,6 +615,7 @@ content_mapping.update({
     "image/jpeg": html_image,
     "image/gif": html_image,
     "image/svg+xml": html_html,
+    "text/uri-list": html_uri_list,
 })
 
 tag_mapping.update(

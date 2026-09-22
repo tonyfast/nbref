@@ -5,18 +5,24 @@ HERE = Path(__file__).parent
 
 schema = Schema.from_id( HERE / "core.yaml").expand()
 
+class Options(Options):
+    pass
+
 def html_patch_cell(schema: Schema, options: Options = None, **attrs):
-    print("patch", schema.aid())
+    # print("patch", schema.aid())
     value = schema.value()
     if value["cell_type"] == "markdown":
         value["outputs"] = [dict(data={"text/markdown": value["source"]})]
 
+    content_schema = value.get("metadata", {}).get("contentSchema")
+    if content_schema:
+        schema = schema.append(dict(properties=dict(source=dict(contentSchema=content_schema))))
     return schema
 
 def html_notebook(schema: Schema, options: Options = None, **attrs):
     patch = options.patch | {
         "#/properties/cells/items": html_patch_cell,
-        "#/properties/cells/items/properties/execution_count": print,
+        # "#/properties/cells/items/properties/execution_count": print,
     }
     with options.enter(patch=patch, input=False) as options:
         document = list(html_validator(schema, options, **attrs)) 
