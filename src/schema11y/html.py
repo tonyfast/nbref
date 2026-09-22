@@ -43,28 +43,33 @@ class Options:
         return wrapper()
 
 
+
 def attrs(callable=None, id="value", **default_attrs):
     if callable is None:
         return lambda f: attrs(f, id=id, **default_attrs)
     @wraps(callable)
     def wrapper(schema: Schema, options: Options, *children, **attrs):
         nonlocal callable
-        for key, value in default_attrs.items():
-            attrs.setdefault(key, value)
-        if id:
-            if id is True:
-                attrs["id"] = schema.id()
-            elif isinstance(id, str):
-                attrs["id"] = schema.id(id)
-            else:
-                attrs["id"] = schema.id(*id)
-            attrs["id"] = str(attrs["id"])
-        attrs.update(html_class(schema, options, **attrs))
+        attrs = html_attrs(schema, options, *children, id="value", **attrs)
         return callable(schema, options, *children, **attrs)
     return wrapper
-    return main
+
+def html_attrs(schema: Schema, options: Options, *children, id="value", **attrs):
+    if id:
+        if id is True:
+            attrs["id"] = schema.id()
+        elif isinstance(id, str):
+            attrs["id"] = schema.id(id)
+        else:
+            attrs["id"] = schema.id(*id)
+        attrs["id"] = str(attrs["id"])
+
+    attrs.update(html_class(schema, options, **attrs))
+    return attrs
+
 
 def html_class(schema: Schema, options: Options, *children, **attrs):
+    """compose the html classes for an element"""
     classes = attrs.get("class", [])
     if isinstance(classes, str):
         classes = [classes]
@@ -77,6 +82,10 @@ def html_class(schema: Schema, options: Options, *children, **attrs):
         elif isinstance(tags, str):
             classes.append(tags)
     attrs = schema.subschema("attrs")
+    atype = schema.atype()[-1]
+    if isinstance(atype, str):
+        classes.append(atype)
+    classes.append(schema.role(input=True))
     for attrs in attrs.schemas:
         cls = attrs.get("class")
         if cls:
@@ -85,18 +94,23 @@ def html_class(schema: Schema, options: Options, *children, **attrs):
             elif isinstance(cls, str):
                 classes.append(cls)
     classes.extend(schema.types())
-    id = schema.id()[-1]
-    if isinstance(id, str):
-        classes.append(id)
+    # id = schema.id()
+    # if isinstance(id, str):
+    #     classes.append(id)
     if classes:
         return {"class": classes}
     return {}
 
 def html_render(schema: Schema, options: Options = Options(), **opts):
+    """render a schema as HTML"""
     from IPython.display import display, HTML
     return HTML("".join(map(str, html_bs4(schema, options, **opts))))
 
 def html_bs4(schema: Schema, options: Options, *children, **opts):
+    """render a schema as HTML object using the BeautifulSoup backend"""
+    # initialize the options for this specific run of the task.
+    # use an explicit Option to object state after execution;
+    # a new options class is needed for every run because evaluated must be reset
     if isinstance(options, dict):
         options = Options(**options)
     elif options is None:
@@ -105,7 +119,20 @@ def html_bs4(schema: Schema, options: Options, *children, **opts):
     options.evaluated = []
     yield from html_root(schema, options)
 
+
+def html_frame(schema: Schema, options: Options, *children, **attrs):
+    """render the boundaries and extent of the object."""
+    # html core lies inside the frame
+    # parent establishes the width of the frame
+    schema = html_patch(schema, options)
+    core = html_core(schema, options, *children)
+    unevaluated = html_unevaluated_properties(schema, options)
+    yield from html_parent(schema, options, *core, *unevaluated)
+
+html_root = html_frame
+
 def html_patch(schema: Schema, options: Options = Options):
+    """apply patches to the schema."""
     id = schema.atype()
     patches = options.patch.get(str(id)[1:])
     if patches:
@@ -114,30 +141,29 @@ def html_patch(schema: Schema, options: Options = Options):
             schema = patched
     return schema
 
-
-def html_root(schema: Schema, options: Options, *children, **attrs):
-    schema = html_patch(schema, options)
-    core = html_core(schema, options, *children)
-    unevaluated = html_unevaluated_properties(schema, options)
-    yield from html_parent(schema, options, *core, *unevaluated)
-
 def html_parent(schema: Schema, options: Options, *children):
-    # if not options.unevaluated:
-    #     children += tuple(html_unevaluated_properties(schema, options))
+    """render the parent container around the core"""
+    insert, append = schema.get("insert", []), schema.get("append", [])
     for subschema in schema.schemas:
         parent = subschema.get("parent")
         if parent is not None:
             if not parent:
-                yield from children
-                return
+                continue
             parent = subschema.child("parent").expand()
             with options.enter(output=False):
-                yield from html_root(parent.linked(id=schema.id("parent")), options, *children)
-            break
+                yield from html_root(parent.linked(id=schema.id("parent")), options, *insert, *children, *append)
+            return
     else:
+        yield from insert
         yield from children
+        yield from append
 
 def html_core(schema: Schema, options: Options, *children):
+    """render the core content of the object beginning by splitting it into input and output sections."""
+    # fetch-execute is the only constant in computing, so be benefit from this separation.
+    # the output area provides a definitive region for the value of an object.
+    # this is important because of the jsonschema applicators offer multiple inputs for a single output.
+    # this separation lets us handle the form vs output accessibility independently.
     types = schema.types()
     readOnly = schema.get("readOnly", False)
     with options.enter(
@@ -148,9 +174,14 @@ def html_core(schema: Schema, options: Options, *children):
             yield options.el("output.read", *list(content), role="none", **html_class(schema, options))
 
         if options.input:
-            yield from html_applicator(schema, options, *children)
+            yield from html_applicator(schema, options)
+    yield from children
 
 def html_content(schema: Schema, options: Options, *children, **attrs):
+    """render the content schema that decides influences the output representation"""
+    # a schema can contain either a contentMediaType or a contentSchema.
+    # the contentMediaTypes are extensible through the options parameters.
+    # meanwhiile contentSchema can be used for a fully custom representation.
     schema = schema.expand_all()
     content_schema = schema.subschema("contentSchema")
     if content_schema:
@@ -175,6 +206,8 @@ def html_content(schema: Schema, options: Options, *children, **attrs):
 
 
 def html_applicator(schema: Schema, options: Options, *children):
+    """begin rendering the applicator schema keys"""
+    # the applicator schema keys provide ways to combine multiple schema.
     yield from html_all_of(schema, options, *children)
 
 def html_all_of(schema: Schema, options: Options, *children):
@@ -333,12 +366,17 @@ def html_input_default(schema: Schema, options: Options, *children, **attrs):
 @attrs
 def html_list(schema: Schema, options: Options, *children, **attrs):
     object = schema.value()
-    ol = options.el("ol.array")
+    ol = options.el("ol", **attrs)
     for i, item in enumerate(object):
         subschema = schema.index(i)
         id = schema.id()
         link = options.el("a", html_path(subschema, options), href=f"#{id}")
-        item = options.el("li.array", link, html_root(subschema, options), id=str(id))
+        attrs["id"] = str(id)
+        klass = html_class(subschema, options, *children, **attrs)
+        attrs.setdefault("class", []).extend(klass.get("class", []))
+        attrs.setdefault("aria", dict(posinset=i+1, setsize=len(object)))
+        item = options.el("li.array", link, html_root(subschema, options), **attrs)
+        
         options.evaluated.append(str(subschema.id()))
         options.el(ol, item)
     yield ol
@@ -348,7 +386,7 @@ def html_associationlist(schema: Schema, options: Options, *children, **attrs):
     object = schema.value()
     
     schema = schema.linked(object)
-    ul = options.el("ul")
+    ul = options.el("ul", **attrs)
 
     if options.unevaluated:
         keys = object
@@ -374,7 +412,8 @@ def html_associationlist(schema: Schema, options: Options, *children, **attrs):
                 subschema = subschema.linked(default)
         id = schema.id(key)
         link = options.el("a", html_path(subschema, options), href=f"#{id}")
-        item = options.el("li", link, html_root(subschema, options), id=str(id))
+        klass = html_class(subschema, options, attrs)
+        item = options.el("li", link, html_root(subschema, options), id=str(id), **klass)
         options.evaluated.append(str(subschema.id()))
         options.el(ul, item)
     yield ul
@@ -389,7 +428,7 @@ def html_unevaluated_properties(schema: Schema, options: Options, *children, **a
 def html_plain(schema: Schema, options: Options, *children, **attrs):
     object = schema.value()
     yield str(object)
-    yield from children
+    # yield from children
 
 def html_script(schema: Schema, options: Options, *children, **attrs):
     content_type = schema.get("contentMediaType")
@@ -440,7 +479,8 @@ def html_metadata(schema: Schema, options: Options, *children, **attrs):
 
 def html_description(schema: Schema, options: Options, *children, **attrs):
     description = schema.get("description", "")
-    yield options.el("p.description", unified_string(description), id=schema.id("description"))
+    if description:
+        yield options.el("p.description", unified_string(description), id=schema.id("description"))
 
 def html_examples(schema: Schema, options: Options, *children, **attrs):
     for example in schema.get("examples", []):
@@ -459,14 +499,14 @@ def html_number(schema: Schema, options: Options, *children, **attrs):
 def html_checkbox(schema: Schema, options: Options, *children, **attrs):
     if schema.value:
         attrs["checked"] = ""
-    yield options.el("input", type="checkbox")
+    yield options.el("input", type="checkbox", **attrs)
     yield from html_label(schema, options, **attrs)
 
 @attrs  
 def html_landmark(schema: Schema, options: Options, *children, tag="section", **attrs):
     heading = html_heading(schema, options)
     metadata = html_metadata(schema, options) 
-    yield options.el(tag, heading, metadata,     *children, **attrs)
+    yield options.el(tag, heading, metadata, *children, **attrs)
 
 def html_heading(schema: Schema, options: Options, *children, **attrs):
     yield options.el(f"h{options.heading}", html_title(schema, options), **attrs)
@@ -557,29 +597,6 @@ def html_radiogroup(schema: Schema, options: Options, *children, **attrs):
         options.el(fieldset, html_label(schema, options, **attrs))
     yield fieldset
 
-def html_html(schema: Schema, options: Options, *children, **attrs):
-    value = unified_string(schema.value())
-    yield from options.el(value, *children, raw=True, **attrs)
-
-def html_markdown(schema: Schema, options: Options, *children, **attrs):
-    from midgy.tangle import get_markdown_it
-    value = unified_string(schema.value())
-    value = get_markdown_it().render(value)
-    yield from options.el(value, *children, raw=True, **attrs)
-
-def html_image(schema: Schema, options: Options, *children, **attrs):
-    value = unified_string(schema.value())
-    mimetype = schema.get("contentMediaType")
-    data = F"data:{mimetype};base64,{value}"
-    yield options.el("img", *children, src=data, **attrs)
-
-def html_uri_list(schema: Schema, options: Options, *children, **attrs):
-    # needs work
-    value = unified_string(schema.value())
-    uris = value.splitlines()
-    for uri in filter(str.strip, uris):
-        yield options.el("a", uri, href=uri, *children, **attrs)
-
 role_mapping[None] = html_plain
 role_mapping.update(
     associationlist=html_associationlist,
@@ -608,14 +625,7 @@ role_mapping.update(
 content_mapping[None] = html_plain
 content_mapping.update({
     "text/plain": html_plain,
-    "text/html": html_html,
-    "text/markdown": html_markdown,
     "application/json": html_script,
-    "image/png": html_image,
-    "image/jpeg": html_image,
-    "image/gif": html_image,
-    "image/svg+xml": html_html,
-    "text/uri-list": html_uri_list,
 })
 
 tag_mapping.update(
