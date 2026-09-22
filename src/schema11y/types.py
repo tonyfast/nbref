@@ -102,8 +102,8 @@ class Subschema:
             while root.parent is not None:
                 root = root.parent
             root = root.root.get("@vocab", self.root.get("$id"))
-            contents= self.REGISTRY.resolver(root).lookup(dynamic_ref).contents
-            return Subschema(contents).expand()
+            resolved = self.REGISTRY.resolver(root).lookup(dynamic_ref)
+            return Subschema(resolved.contents).expand()
 
     def expand_ref(self):
         ref = self.get("$ref")
@@ -120,7 +120,10 @@ class Subschema:
             contents =resolver.lookup(ref).contents
             # should pull over fragments for the path
             parsed = urlparse(ref)
-            return Subschema(contents, Pointer("#" + parsed.fragment), self).expand()
+            resolved = self.REGISTRY.resolver(root).lookup(ref)
+            if len(resolved.resolver._registry) > len(Subschema.REGISTRY):
+                Subschema.REGISTRY = resolved.resolver._registry
+            return Subschema(resolved.contents, Pointer("#" + parsed.fragment), self).expand()
             # relative pointers need the root reattached to their schema in fact this fucntion should export shcema 
 
     def get(self, key, default=None):
