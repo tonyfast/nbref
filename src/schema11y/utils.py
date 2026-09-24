@@ -22,17 +22,23 @@ def el_from_tag(tag, *children, raw=False, **attrs):
             child = list(child)
         if isinstance(child, list):
             for subchild in child:
-                tag.append(subchild)
-        else:
+                if subchild is not None:
+                    tag.append(subchild)
+        elif child is not None:
             tag.append(child)
-    style = attrs.get("style")
+    style = attrs.pop("style", None)
     if style:
         styles = ""
         for key, value in style.items():
             styles += f"{key}: {value}; "
         attrs["style"] = styles
+    aria = attrs.pop("aria", None)
+    if aria:
+        for key, value in aria.items():
+            attrs.setdefault(f"aria-{key}", value)
         
-
+    if "class" in tag.attrs:
+        attrs["class"] = list(set(tag.attrs["class"]) - {None}) 
     tag.attrs.update(attrs)
     return tag
 
@@ -43,6 +49,7 @@ def el_from_selector(selection, *children, first=True, raw=False, **attrs):
         if soup.body:
             return soup.body.children
         return soup
+    
     if isinstance(selection, bs4.Tag):
         return el_from_tag(selection, *children, **attrs)
     if isinstance(selection, str):

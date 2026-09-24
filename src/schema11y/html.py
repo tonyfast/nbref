@@ -3,9 +3,12 @@ from asyncio import exceptions
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial, wraps
+from turtle import ht
 import typing 
 from numpy import isin
 from toolz import pipe, compose_left as compose
+
+from schema11y import schema
 from .types import Schema, Subschema, EMPTY
 from .utils import el_from_selector
 class ValidationError(ExceptionGroup):
@@ -16,10 +19,23 @@ content_mapping = dict()
 format_mapping = dict()
 tag_mapping = dict()
 
+def debug(callable):
+    def yield_html(schema: Schema, options: Options, *children, **attrs):
+        result = callable(schema, options, *children, **attrs)
+        if options.debug:
+            yield options.el("span.debug.start", "start", str(callable), str(schema.aid()), str(schema.atype()))
+        yield from result
+        if options.debug:
+            yield options.el("span.debug.end", "end", str(callable),str(schema.aid()), str(schema.atype()))
+
+    return yield_html
+
 @dataclass
 class Options:
     unevaluated: bool = False
-    evaluated: list = field(default_factory=role_mapping.copy)
+    debug: bool = False
+    metadata: bool = False
+    evaluated: list = field(default_factory=list)
     role: dict = field(default_factory=role_mapping.copy)
     content: dict = field(default_factory=content_mapping.copy)
     format: dict = field(default_factory=format_mapping.copy)
@@ -57,11 +73,11 @@ def attrs(callable=None, id="value", **default_attrs):
 def html_attrs(schema: Schema, options: Options, *children, id="value", **attrs):
     if id:
         if id is True:
-            attrs["id"] = schema.id()
+            attrs["id"] = schema.aid()
         elif isinstance(id, str):
-            attrs["id"] = schema.id(id)
+            attrs["id"] = schema.aid(id)
         else:
-            attrs["id"] = schema.id(*id)
+            attrs["id"] = schema.aid(*id)
         attrs["id"] = str(attrs["id"])
 
     attrs.update(html_class(schema, options, **attrs))
@@ -98,7 +114,7 @@ def html_class(schema: Schema, options: Options, *children, **attrs):
     # if isinstance(id, str):
     #     classes.append(id)
     if classes:
-        return {"class": classes}
+        return {"class": list(set(classes) - {None})}
     return {}
 
 def html_render(schema: Schema, options: Options = Options(), **opts):
@@ -146,18 +162,22 @@ def html_parent(schema: Schema, options: Options, *children):
     insert, append = schema.get("insert", []), schema.get("append", [])
     for subschema in schema.schemas:
         parent = subschema.get("parent")
+
         if parent is not None:
             if not parent:
+                if parent is False:
+                    break
                 continue
             parent = subschema.child("parent").expand()
+            children = list(children)
             with options.enter(output=False):
                 yield from html_root(parent.linked(id=schema.id("parent")), options, *insert, *children, *append)
             return
-    else:
-        yield from insert
-        yield from children
-        yield from append
+    yield from insert
+    yield from children
+    yield from append
 
+@debug
 def html_core(schema: Schema, options: Options, *children):
     """render the core content of the object beginning by splitting it into input and output sections."""
     # fetch-execute is the only constant in computing, so be benefit from this separation.
@@ -168,14 +188,16 @@ def html_core(schema: Schema, options: Options, *children):
     readOnly = schema.get("readOnly", False)
     with options.enter(
         input=not readOnly,
-    ) as options:
-        if options.output:
-            content = list(html_content(schema, options))
-            yield options.el("output.read", *list(content), role="none", **html_class(schema, options))
+    ) as new_options:
+        input = new_options.input
+        if new_options.output or not input:
+            content = list(html_content(schema, new_options))
+            yield new_options.el("output.read", *list(content), role="none", **html_class(schema, new_options))
 
-        if options.input:
-            yield from html_applicator(schema, options)
-    yield from children
+        if input:
+            yield from html_applicator(schema, new_options, *children)
+    
+    
 
 def html_content(schema: Schema, options: Options, *children, **attrs):
     """render the content schema that decides influences the output representation"""
@@ -204,42 +226,46 @@ def html_content(schema: Schema, options: Options, *children, **attrs):
         return
     yield from callable(schema, options, *children, **attrs)
 
-
-def html_applicator(schema: Schema, options: Options, *children):
+@debug
+def html_applicator(schema: Schema, options: Options, *children, **attrs):
     """begin rendering the applicator schema keys"""
     # the applicator schema keys provide ways to combine multiple schema.
     yield from html_all_of(schema, options, *children)
 
-def html_all_of(schema: Schema, options: Options, *children):
+@debug
+def html_all_of(schema: Schema, options: Options, *children, **attrs):
     for subschema in schema.schemas:
         all_of = subschema.get("allOf", None)
           
         if all_of is not None:
             for i, _ in enumerate(all_of):
-                yield from html_root(
-                    schema.override(parent={}, allOf=[]).override(subschema.child("allOf", i).expand())
-                    .linked(type=schema.atype("allOf",  i)), 
-                    options, *children
-                )
+                tmp = schema.override(parent={}, allOf=[]).override(subschema.child("allOf", i).expand()).linked(type=schema.atype("allOf",  i))
+                children = html_applicator(tmp, options)
+                yield from html_parent(tmp, options, *children)
             break
     # else:
     yield from html_any_of(schema, options, *children)
 
-def html_any_of(schema: Schema, options: Options, *children):
+@debug
+def html_any_of(schema: Schema, options: Options, *children, **attrs):
     for subschema in schema.schemas:
         any_of = subschema.get("anyOf", None)
         if any_of is not None:
             for i, _ in enumerate(any_of):
-                yield from html_root(
+                children = html_applicator(
                     schema.override(parent={}, anyOf=[]).override(subschema.child("anyOf", i).expand())
                     .linked(type=schema.atype("anyOf",  i)), 
                     options, *children
                 )
+                yield from html_parent(
+                    schema.override(parent={}, anyOf=[]).override(subschema.child("anyOf", i).expand())
+                    .linked(type=schema.atype("anyOf",  i)), options, *children
+                )
             break
     yield from html_one_of(schema, options, *children)
 
-
-def html_one_of(schema: Schema, options: Options, *children):
+@debug
+def html_one_of(schema: Schema, options: Options, *children, **attrs):
     types = schema.types()
     if "integer" in types:
         if "number" in types:
@@ -284,7 +310,8 @@ def html_one_of(schema: Schema, options: Options, *children):
                 subschema = schema.override(schema.child("oneOf", i)).linked(
                     type=schema.atype("oneOf", i),
                 )
-            options.el(item, html_validator(subschema, options, *children))
+            options.el(item, (html_applicator if has_one_of else html_validator)(subschema, options, *children))
+            
         except ExceptionGroup as exception:
             exceptions.append(exception)
             subschema = schema.override(subschema).linked(
@@ -333,7 +360,7 @@ def html_validator(schema: Schema, options: Options, *children):
     yield from html_role(schema, options, *children)
     yield from html_dependent_schema(schema, options, *children)
     yield from html_metadata(schema, options, *children)
-
+@debug
 def html_role(schema: Schema, options: Options, *children):
     tag = schema.get("tagName")
     if tag:
@@ -366,34 +393,42 @@ def html_input_default(schema: Schema, options: Options, *children, **attrs):
 @attrs
 def html_list(schema: Schema, options: Options, *children, **attrs):
     object = schema.value()
+    role = schema.role()
+    if role != "list":
+        attrs["role"] = role
     ol = options.el("ol", **attrs)
+
     for i, item in enumerate(object):
         subschema = schema.index(i)
-        id = schema.id()
+        attrs = html_attrs(subschema, options, *children, id=True)
+        id = attrs["id"]
         link = options.el("a", html_path(subschema, options), href=f"#{id}")
-        attrs["id"] = str(id)
-        klass = html_class(subschema, options, *children, **attrs)
-        attrs.setdefault("class", []).extend(klass.get("class", []))
-        attrs.setdefault("aria", dict(posinset=i+1, setsize=len(object)))
         item = options.el("li.array", link, html_root(subschema, options), **attrs)
-        
-        options.evaluated.append(str(subschema.id()))
+        attrs.setdefault("aria", {}).update(dict(posinset=i+1, setsize=len(object)))
+        options.evaluated.append(str(id))
         options.el(ol, item)
     yield ol
 
 @attrs
 def html_associationlist(schema: Schema, options: Options, *children, **attrs):
     object = schema.value()
-    
+    role = schema.role()
+    if role != "associationlist":
+        attrs["role"] = role
     schema = schema.linked(object)
     ul = options.el("ul", **attrs)
 
+    object = schema.default({}) | object
     if options.unevaluated:
         keys = object
     else:
+        keys = schema.get("required", [])
         properties = schema.get("properties", None)
         if properties is not None:
-            keys = list(filter(bool, properties))
+            for prop in properties:
+                if prop not in keys:
+                    if prop in object:
+                        keys.append(prop)
         else:
             keys = list(object)
     
@@ -471,11 +506,13 @@ def html_title(schema: Schema, options: Options, *children, **attrs):
     yield options.el("span.type", *schema.types())
     
 def html_path(schema: Schema, options: Options, *children, **attrs):
-    yield options.el("span.path", str(schema.id()))
+    yield options.el("span.path", *(options.el("span", str(x)) for x in schema.aid()))
 
 def html_metadata(schema: Schema, options: Options, *children, **attrs):
-    yield from html_description(schema, options)
-    yield from html_examples(schema, options)
+    # this really isnt about on an off but about verbosity labels, descriptions, details¬
+    if options.metadata:
+        yield from html_description(schema, options)
+        yield from html_examples(schema, options)
 
 def html_description(schema: Schema, options: Options, *children, **attrs):
     description = schema.get("description", "")
@@ -514,6 +551,7 @@ def html_heading(schema: Schema, options: Options, *children, **attrs):
 def html_link(schema: Schema, options: Options, *children, **attrs):
     yield options.el("a", *children, **attrs)
 
+@attrs
 def html_details(schema: Schema, options: Options, *children, **attrs):
     if schema.subschema("aria").get("expanded", True):
         attrs["open"] = ""
@@ -597,6 +635,17 @@ def html_radiogroup(schema: Schema, options: Options, *children, **attrs):
         options.el(fieldset, html_label(schema, options, **attrs))
     yield fieldset
 
+@attrs
+def html_navigation(schema: Schema, options: Options, *children, **attrs):
+    yield options.el("nav", *children, **attrs)
+
+def html_toolbar(schema: Schema, options: Options, *children, **attrs):
+    object = schema.value()
+    if isinstance(object, list):
+        yield from html_list(schema, options, *children, **attrs)
+    elif isinstance(object, dict):
+        yield from html_associationlist(schema, options, *children, **attrs)
+
 role_mapping[None] = html_plain
 role_mapping.update(
     associationlist=html_associationlist,
@@ -608,12 +657,13 @@ role_mapping.update(
     dialog=html_dialog,
     figure=html_figure,
     form=html_form,
+    group=html_details,
     heading=html_heading,
     input=html_input,
     link=html_link,
     list=html_list,
     main=partial(html_landmark, tag="main"),
-    group=html_details,
+    navigation=html_navigation,
     radiogroup=html_radiogroup,
     region=html_landmark,
     select=html_select,
@@ -621,7 +671,9 @@ role_mapping.update(
     text=html_plain,
     textbox=html_textbox,
     time=html_time,
+    toolbar=html_toolbar,
 )
+
 content_mapping[None] = html_plain
 content_mapping.update({
     "text/plain": html_plain,

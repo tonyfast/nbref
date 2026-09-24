@@ -58,7 +58,9 @@ class Subschema:
     from .referencing import default_registry
     REGISTRY = default_registry()
     del default_registry
-
+    def hash(self):
+        return hash((id(self.root), tuple(map(id, self.path))))
+    
     def __new__(cls, root=EMPTY, path=None, parent=None, **kwargs):
 
                         
@@ -126,8 +128,11 @@ class Subschema:
             return Subschema(resolved.contents, Pointer("#" + parsed.fragment), self).expand()
             # relative pointers need the root reattached to their schema in fact this fucntion should export shcema 
 
-    def get(self, key, default=None):
-        return self.path.add(key).resolve(self.root, default=default)
+    def get(self, key=None, default=None):
+        path = self.path
+        if key is not None:
+            path = path.add(key)
+        return path.resolve(self.root, default=default)
     
     def __repr__(self):
         return self.path.string() + "@" + repr(self.object())
@@ -196,17 +201,19 @@ class Schema(Repr):
             if isinstance(schema, Schema):
                 # self.schemas.extend(schema.schemas)
                 for schema in schema.schemas:
-                    i = id(schema)
-                    if i not in ids:
+                    index = schema.hash()
+                    if index not in ids:
                         self.schemas.append(schema)
-                        ids.add(id(schema))
+                    ids.add(index)
                 continue
             elif isinstance(schema, dict):
                 schema = Subschema(schema)
-            i = id(schema)
-            if i not in ids:
-                ids.add(i)
+            
+            index = schema.hash()
+            if index not in ids:
                 self.schemas.append(schema)
+            ids.add(index)
+
 
     def __repr__(self):
         return repr(self.schemas)
@@ -328,6 +335,11 @@ class Schema(Repr):
         return self.override(**linked_data)
     
     def expand_all(self):
+        try:
+
+            return self._expanded
+        except AttributeError:
+            pass
         schema = Schema()
         for key in ("anyOf", "allOf"):
             # i only added this loop to support a version of json ld schema
@@ -339,7 +351,8 @@ class Schema(Repr):
                             subschema.child(key, j).expand().expand_all()
                         )
                     # break
-        return self.override(schema)
+        self._expanded = self.override(schema) if schema.schemas else self
+        return self._expanded
     
     def expand(self):
         schema = Schema()
@@ -359,7 +372,20 @@ class Schema(Repr):
                 self.schemas.extend(schema.schemas)
             else:
                 self.schemas.append(Subschema(schema))
+        return self._unique(insert=False)
+
+    def _unique(self, insert=True):
+        ids = set()
+        pop = list()
+        for i, schema in enumerate(self.schemas):
+            index = schema.hash()
+            if index in ids:
+                pop.append(i)
+            ids.add(index)
+        for i in reversed(pop):
+            self.schemas.pop(i)
         return self
+    
 
     def override(self, *schemas, **kwargs):
         if kwargs:
@@ -438,7 +464,8 @@ class Schema(Repr):
 
     def avocab(self, *path):
         return self.get("@vocab")
-
+    def children(self):
+        return self.get("children", [])
     def types(self):
         types = self.get("type")
         if isinstance(types, str):
@@ -506,3 +533,9 @@ class Schema(Repr):
         if n is None:
             return self
         return self.linked(self.value()[:n])
+
+    def __getitem__(self, key):
+        value = self.get(key)
+        if value is EMPTY:
+            raise KeyError(key)
+        return value
