@@ -1,5 +1,3 @@
 $dynamicAnchor: notebook
 $id: "https://deathbeds.github.io/schema11y/schema/notebook/core.yaml"
-allOf:
-  - $ref: "html.yaml"
-  - $ref: "types.yaml"
+$ref: "html.yaml"

@@ -1,11 +1,13 @@
 $dynamicAnchor: notebook
 type: object
 contentMediaType: "application/x-ipynb+json"
+$ref: types.yaml
 properties:
   metadata:
     type: object
     allOf:
-    - properties:
+    - required: [title, description, authors, updated_at, created_at]
+      properties:
           title: 
             type: string
             default: ""
@@ -41,10 +43,13 @@ properties:
 additionalProperties: false
 $defs:
   cell:
-    parent:
-      role: group
+    parent: 
+        role: group
+    tags: [cell]
     allOf:
-      - properties:
+      - parent: false
+        role: toolbar
+        properties:
           id:
             "@type": "@id"
           cell_type: 
@@ -54,7 +59,8 @@ $defs:
               - raw
               - unknown
           execution_count: {}
-      - properties:
+      - parent: false
+        properties:
           source:
             parent:
               role: group

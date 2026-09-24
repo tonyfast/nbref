@@ -3,7 +3,7 @@ from pathlib import Path
 from ...html import Options, html_root, content_mapping, html_validator
 HERE = Path(__file__).parent
 
-schema = Schema.from_id( HERE / "core.yaml").expand()
+notebook_schema = schema = Schema.from_id( HERE / "core.yaml").expand()
 
 class Options(Options):
     pass
@@ -24,21 +24,31 @@ def html_notebook(schema: Schema, options: Options = None, **attrs):
         "#/properties/cells/items": html_patch_cell,
         # "#/properties/cells/items/properties/execution_count": print,
     }
-    with options.enter(patch=patch, input=False) as options:
+    if not schema.get("$dynamicAnchor"):
+        # ensure the notebook schema is attached to the value
+        schema = notebook_schema.linked(schema.value(), schema.aid(), base=schema.abase())
+    with options.enter(patch=patch, input=True, output=True) as options:
         document = list(html_validator(schema, options, **attrs)) 
     yield from patch_attachments(document, schema, options)
+
+#todo
+def replace_title(document, title):
+    for doc in document:
+        if doc.select_one("title"):
+            doc.select_one("title").string = title
+    return document
 
 def patch_attachments(document, schema, options):
     import collections
     for doc in document:
-        # attachments = collections.ChainMap(*filter(bool, (x.get("attachments", None) for x in schema.value().get("cells"))))
+        attachments = collections.ChainMap(*filter(bool, (x.get("attachments", None) for x in schema.value().get("cells", []))))
 
-        # for img in doc.select("""img[src^="attachment"]"""):
-        #     print(str(img)[:120])
-        #     filename = img["src"].removeprefix("attachment:")
-        #     *_, ext = filename.rpartition(".")
-        #     for type, data in attachments.get(filename, {}).items():
-        #         img["src"] = F"data:{type};base64,{data}"
+        for img in doc.select("""img[src^="attachment"]"""):
+            filename = img["src"].removeprefix("attachment:")
+            *_, ext = filename.rpartition(".")
+            for type, data in attachments.get(filename, {}).items():
+                img["src"] = F"data:{type};base64,{data}"
         yield doc
 
-content_mapping["application/x-ipynb+json"] = html_notebook
+NOTEBOOK = "application/x-ipynb+json"
+content_mapping[NOTEBOOK] = html_notebook

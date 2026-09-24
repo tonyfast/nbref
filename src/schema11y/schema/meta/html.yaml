@@ -24,3 +24,18 @@ properties:
   "on":
     description: The event handler attributes of the HTML element.
     type: object
+  parent:
+    description: The parent container of the HTML element.
+    type: object
+    allOf:
+    - $dynamicRef: "#meta"
+    - properties:
+        insert: 
+          description: The elements to insert into the parent container.
+          type: array
+        children:
+          description: The child elements of the parent container.
+          type: array
+        append:
+          description: The elements to append to the parent container.
+          type: array

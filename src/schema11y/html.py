@@ -20,6 +20,7 @@ format_mapping = dict()
 tag_mapping = dict()
 
 def debug(callable):
+    """a decorator to enable debugging for HTML rendering"""
     def yield_html(schema: Schema, options: Options, *children, **attrs):
         result = callable(schema, options, *children, **attrs)
         if options.debug:
@@ -32,6 +33,7 @@ def debug(callable):
 
 @dataclass
 class Options:
+    """Options for HTML rendering and validation."""
     unevaluated: bool = False
     debug: bool = False
     metadata: bool = False
@@ -59,8 +61,8 @@ class Options:
         return wrapper()
 
 
-
 def attrs(callable=None, id="value", **default_attrs):
+    """a decorator to add HTML attributes to the rendered element"""
     if callable is None:
         return lambda f: attrs(f, id=id, **default_attrs)
     @wraps(callable)
@@ -71,6 +73,7 @@ def attrs(callable=None, id="value", **default_attrs):
     return wrapper
 
 def html_attrs(schema: Schema, options: Options, *children, id="value", **attrs):
+    """compute the HTML attributes for an element based on the schema and options"""
     if id:
         if id is True:
             attrs["id"] = schema.aid()
@@ -168,7 +171,7 @@ def html_parent(schema: Schema, options: Options, *children):
                 if parent is False:
                     break
                 continue
-            parent = subschema.child("parent").expand()
+            parent = schema.subschema("parent").expand_all()
             children = list(children)
             with options.enter(output=False):
                 yield from html_root(parent.linked(id=schema.id("parent")), options, *insert, *children, *append)
