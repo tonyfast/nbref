@@ -2,21 +2,44 @@ from ...types import Schema
 from pathlib import Path
 from ...html import Options, html_root, content_mapping, html_validator
 HERE = Path(__file__).parent
-
+    
 notebook_schema = schema = Schema.from_id( HERE / "core.yaml").expand()
-
-class Options(Options):
-    pass
 
 def html_patch_cell(schema: Schema, options: Options = None, **attrs):
     # print("patch", schema.aid())
     value = schema.value()
     if value["cell_type"] == "markdown":
         value["outputs"] = [dict(data={"text/markdown": value["source"]})]
+    elif value["cell_type"] == "raw":
+        content_type = value.get("metadata", {}).get("contentSchema", {}).get("contentMediaType")
+        if content_type == "text/uri-list":
+            value["outputs"] = [dict(data={"text/uri-list": value["source"]})]
 
     content_schema = value.get("metadata", {}).get("contentSchema")
     if content_schema:
         schema = schema.append(dict(properties=dict(source=dict(contentSchema=content_schema))))
+
+    schema = html_notebook_cell_metadata(schema, options, **attrs)
+
+    return schema
+
+def html_notebook_cell_metadata(schema: Schema, options: Options = None, **attrs):
+    jupyter = schema.value().get("metadata", {}).get("jupyter", {})
+    source_hidden = jupyter.get("source_hidden", False)
+    output_hidden = jupyter.get("output_hidden", False)
+    collapsed = jupyter.get("collapsed", False)
+    scrolled = jupyter.get("scrolled", False)
+    cell_tags = []
+    if source_hidden:
+        cell_tags.append("source_hidden")
+    if output_hidden:
+        cell_tags.append("output_hidden")
+    if collapsed:
+        cell_tags.append("collapsed")
+    if scrolled:
+        cell_tags.append("scrolled")
+    if cell_tags:
+        schema = schema.append(tags=[cell_tags])
     return schema
 
 def html_notebook(schema: Schema, options: Options = None, **attrs):

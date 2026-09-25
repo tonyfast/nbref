@@ -3,14 +3,11 @@ from asyncio import exceptions
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial, wraps
-from turtle import ht
-import typing 
-from numpy import isin
 from toolz import pipe, compose_left as compose
 
 from schema11y import schema
-from .types import Schema, Subschema, EMPTY
-from .utils import el_from_selector
+from ..types import Schema, Subschema, EMPTY
+from ..utils import el_from_selector
 class ValidationError(ExceptionGroup):
     pass
 
@@ -150,7 +147,7 @@ def html_frame(schema: Schema, options: Options, *children, **attrs):
 
 html_root = html_frame
 
-def html_patch(schema: Schema, options: Options = Options):
+def html_patch(schema: Schema, options: Options = Options, **attrs):
     """apply patches to the schema."""
     id = schema.atype()
     patches = options.patch.get(str(id)[1:])
@@ -403,7 +400,8 @@ def html_list(schema: Schema, options: Options, *children, **attrs):
 
     for i, item in enumerate(object):
         subschema = schema.index(i)
-        attrs = html_attrs(subschema, options, *children, id=True)
+        patched = html_patch(subschema, options, **attrs)
+        attrs = html_attrs(patched, options, *children, id=True)
         id = attrs["id"]
         link = options.el("a", html_path(subschema, options), href=f"#{id}")
         item = options.el("li.array", link, html_root(subschema, options), **attrs)
@@ -450,8 +448,9 @@ def html_associationlist(schema: Schema, options: Options, *children, **attrs):
                 subschema = subschema.linked(default)
         id = schema.id(key)
         link = options.el("a", html_path(subschema, options), href=f"#{id}")
-        klass = html_class(subschema, options, attrs)
-        item = options.el("li", link, html_root(subschema, options), id=str(id), **klass)
+        patched = html_patch(subschema, options, **attrs)
+        attrs = html_attrs(patched, options, *children, id=True)
+        item = options.el("li", link, html_root(subschema, options), **attrs)
         options.evaluated.append(str(subschema.id()))
         options.el(ul, item)
     yield ul
@@ -649,32 +648,46 @@ def html_toolbar(schema: Schema, options: Options, *children, **attrs):
     elif isinstance(object, dict):
         yield from html_associationlist(schema, options, *children, **attrs)
 
+# the role mapping definition contains commented entries for roles that are not yet implemented
 role_mapping[None] = html_plain
 role_mapping.update(
     associationlist=html_associationlist,
     banner=partial(html_landmark, tag="header"),
+    # button=html_button,
     checkbox=html_checkbox, 
     code=html_code,
     complementary=partial(html_landmark, tag="aside"),
     contentinfo=partial(html_landmark, tag="footer"),
+    # definition=html_definition,
     dialog=html_dialog,
+    # feed=html_feed,
     figure=html_figure,
     form=html_form,
     group=html_details,
     heading=html_heading,
+    # img=html_img,
     input=html_input,
     link=html_link,
     list=html_list,
     main=partial(html_landmark, tag="main"),
+    # menu=html_menu,
+    # meter=html_meter,
     navigation=html_navigation,
+    # note=html_note,
     radiogroup=html_radiogroup,
     region=html_landmark,
+    # search=html_search,
     select=html_select,
     spinbutton=html_number,
+    # switch=html_switch,
+    # tab=html_tab,
     text=html_plain,
     textbox=html_textbox,
     time=html_time,
+    # timer=html_timer,
     toolbar=html_toolbar,
+    # tooltip=html_tooltip,
+    # tree=html_tree,
 )
 
 content_mapping[None] = html_plain

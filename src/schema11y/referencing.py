@@ -1,7 +1,12 @@
+from dataclasses import dataclass
 from functools import lru_cache
 
-import requests_cache
 
+@dataclass
+class Resource:
+    contents: dict
+    _specification: object
+    id: str
 @lru_cache(1)
 def get_request_session():
     # handle local and remote requests in the same session

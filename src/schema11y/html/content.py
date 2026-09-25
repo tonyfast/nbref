@@ -6,8 +6,8 @@ GIF = "image/gif"
 SVG_XML = "image/svg+xml"
 URI_LIST = "text/uri-list"
 
-from .types import Schema, Subschema
-from .html import html_plain, Options, content_mapping, unified_string
+from ..types import Schema, Subschema
+from .core import html_plain, Options, content_mapping, unified_string
 
 def html_html(schema: Schema, options: Options, *children, **attrs):
     value = unified_string(schema.value())
@@ -31,7 +31,7 @@ def html_image(schema: Schema, options: Options, *children, **attrs):
 
 def html_uri_list(schema: Schema, options: Options, *children, **attrs):
     # needs work
-    from .html import html_content, html_root
+    from .core import html_content, html_root
     value = unified_string(schema.value())
     uris = value.splitlines()
     for uri in filter(str.strip, uris):

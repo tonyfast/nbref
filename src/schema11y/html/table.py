@@ -1,13 +1,10 @@
 
-from asyncio import exceptions
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial, wraps
-import typing 
-from numpy import isin
 from toolz import pipe, compose_left as compose
-from .schema import Schema, Subschema, Options
-from .html import role_mapping
+from ..types import Schema, Subschema
+from .core import role_mapping, Options
 
 def html_table(schema: Schema, options: Options, *children, **attrs):
     table = options.el("table>thead", **attrs)
@@ -50,4 +47,6 @@ def html_tbody_dict(schema: Schema, options: Options, *children, **attrs):
 
 role_mapping.update(
     table=html_table,
+    # grid=html_grid,
+    # treegrid=html_treegrid,
 )

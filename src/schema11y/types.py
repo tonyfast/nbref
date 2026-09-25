@@ -119,7 +119,6 @@ class Subschema:
                 return Subschema(self.root, path=Pointer(ref), parent=self.parent).expand()
             else:
                 resolver = self.REGISTRY.resolver(root)
-            contents =resolver.lookup(ref).contents
             # should pull over fragments for the path
             parsed = urlparse(ref)
             resolved = self.REGISTRY.resolver(root).lookup(ref)
@@ -187,6 +186,15 @@ class Schema(Repr):
         # it could be a first cell of the document when using nested notebooks.
         # we'd retrieve a notebook and put it in a notebook
         return self.linked(schema, id=id, type=type, base=schema.pop("@base"))
+
+    def load_as_notebook(self, object, id=None, type=None, base=None):
+        from .schema.notebook import notebook_schema
+        if isinstance(object, Path):
+            object = object.absolute().as_uri()
+        return notebook_schema.linked(dict(
+            metadata={},
+            cells=[dict(cell_type="raw", source=object, metadata=dict(contentSchema=dict(contentMediaType="text/uri-list")))]
+        ), id=id, type=type, base=base)
     
     def __init__(self, schemas=None, **kwargs):
         self.schemas = []
@@ -231,7 +239,7 @@ class Schema(Repr):
         return default
 
     def subschema(self, key, default=None):
-        schema = Schema()
+        schema = type(self)()
         for subschema in self.schemas:
             value = subschema.get(key, EMPTY)
             if value is not EMPTY:
@@ -280,7 +288,7 @@ class Schema(Repr):
             value = value[key]
         except (KeyError, TypeError):
             value = EMPTY
-        schema = Schema().linked(
+        schema = type(self)().linked(
             value, self.aid().add(key), self.atype().add("properties", key),
             self.abase(),
             self.avocab(),
@@ -298,6 +306,7 @@ class Schema(Repr):
                     additional = subschema.child("additionalProperties").expand()
                     schema.append(additional.property(key))
                     schema.append(additional)
+        content_media_type = schema.get("contentMediaType")
         return schema
     
 
@@ -307,7 +316,7 @@ class Schema(Repr):
             value = value[index]
         except (IndexError, TypeError):
             value = EMPTY
-        schema = Schema().linked(
+        schema = type(self)().linked(
             value, self.aid().add(index), self.atype().add("items"), self.abase(), self.avocab()
         )
         for subschema in self.expand().expand_all().schemas:
@@ -323,6 +332,8 @@ class Schema(Repr):
     def linked(self, value=EMPTY, id=None, type=None, base=None, vocab=None):
         linked_data = dict()
         if value is not EMPTY and value is not None:
+            # if isinstance(value, Path):
+            #     value = Subschema.resolve(value.absolute().as_uri())
             linked_data["@value"] = value
         if id is not None:
             linked_data["@id"] = Pointer(id)
@@ -340,7 +351,7 @@ class Schema(Repr):
             return self._expanded
         except AttributeError:
             pass
-        schema = Schema()
+        schema = type(self)()
         for key in ("anyOf", "allOf"):
             # i only added this loop to support a version of json ld schema
             for i, subschema in enumerate(self.schemas):
@@ -355,7 +366,7 @@ class Schema(Repr):
         return self._expanded
     
     def expand(self):
-        schema = Schema()
+        schema = type(self)()
         for subschema in self.schemas:
             schema.append(subschema.expand())
         return schema
@@ -399,7 +410,7 @@ class Schema(Repr):
                 schema.append(s)
             else:
                 schema.append(Subschema(s))
-        return Schema(schema + self.schemas)
+        return type(self)(schema + self.schemas)
 
     def add(self, *schemas, **kwargs):
         if kwargs:
@@ -410,7 +421,7 @@ class Schema(Repr):
                 schema.extend(s.schemas)
             else:
                 schema.append(s)
-        return Schema(self.schemas + schema)
+        return type(self)(self.schemas + schema)
             
     def __add__(self, other):
         return self.add(other)
