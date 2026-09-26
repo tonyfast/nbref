@@ -1,0 +1,35 @@
+parent:
+    # need to repeat the parent role main statement because its overridden by the body element and needs to
+    # be redefined
+    role: main
+    insert:
+    - type: array
+      parent: 
+        role: group
+        title: headings
+        parent:
+          tagName: nav.headings
+    parent:
+        tagName: body
+        attrs: 
+            id: BODY
+        insert:
+        - tagName: header
+        - type: array
+          parent:
+            role: group
+            title: site navigation
+            parent:
+                tagName: nav.site
+        append:
+        - tagName: footer
+        parent:
+            insert:
+            - tagName: head
+            attrs:
+                id: HEAD
+            tagName: html
+            attrs:
+                id: HTML
+allOf:
+  - $ref: html.yaml

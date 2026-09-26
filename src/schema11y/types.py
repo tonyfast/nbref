@@ -153,15 +153,34 @@ class Subschema:
 
     
 class Repr:
-    def bs4(self, options: Options = None, **opts):
+    def iframe(self, options: Options = None, style=None, **opts):
+        from .html import html_iframe
+        from IPython.display import HTML
+
+        from .utils import el_from_selector
+        attrs = dict(height=666, width="100%")
+        return HTML(
+            str(el_from_selector("iframe", srcdoc=self.html(options, style=style, **opts).data, **attrs))
+        )
+
+        return parts
+    
+    def bs4(self, options: Options = None, style=None, **opts):
         from .html import html_bs4
 
-        return list(html_bs4(self, options, **opts))
-    
-    def html(self, options: Options = None, **opts):
-        from . html import html_render
+        parts = list(html_bs4(self, options, **opts))
+        if style:
+            parts += list(Schema(contentMediaType="text/css").linked(style).bs4(input=False))
 
-        return html_render(self, options, **opts)
+        return parts
+    
+    def html(self, options: Options = None, style=None, **opts):
+        from . html import html_render
+        from IPython.display import HTML
+
+        parts = self.bs4(options, style=style, **opts)
+        return HTML("".join(map(str, parts)))
+        return parts
 
     def display(self, options: Options = None, **opts):
         from IPython.display import display
@@ -188,10 +207,12 @@ class Schema(Repr):
         return self.linked(schema, id=id, type=type, base=schema.pop("@base"))
 
     def load_as_notebook(self, object, id=None, type=None, base=None):
-        from .schema.notebook import notebook_schema
+        
         if isinstance(object, Path):
             object = object.absolute().as_uri()
-        return notebook_schema.linked(dict(
+        if self.get("$id") is EMPTY:
+            from .schema.notebook import notebook_schema as self
+        return self.linked(dict(
             metadata={},
             cells=[dict(cell_type="raw", source=object, metadata=dict(contentSchema=dict(contentMediaType="text/uri-list")))]
         ), id=id, type=type, base=base)

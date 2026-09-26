@@ -6,7 +6,6 @@ HERE = Path(__file__).parent
 
 from .types import *
 from .html import *
-from .html_content import *
 from .mimetypes import *
 from .ipython import *
 from . import schema

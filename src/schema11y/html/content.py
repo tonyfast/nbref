@@ -1,13 +1,19 @@
+CSS = "text/css"
 HTML = "text/html"
 MARKDOWN = "text/markdown"
 PNG = "image/png"
 JPEG = "image/jpeg"
 GIF = "image/gif"
+CSS = "text/css"
 SVG_XML = "image/svg+xml"
 URI_LIST = "text/uri-list"
 
 from ..types import Schema, Subschema
 from .core import html_plain, Options, content_mapping, unified_string
+
+def html_style(schema: Schema, options: Options, *children, **attrs):
+    value = unified_string(schema.value())
+    yield options.el("style", value, *children, **attrs)
 
 def html_html(schema: Schema, options: Options, *children, **attrs):
     value = unified_string(schema.value())
@@ -36,7 +42,7 @@ def html_uri_list(schema: Schema, options: Options, *children, **attrs):
     uris = value.splitlines()
     for uri in filter(str.strip, uris):
         if "://" in uri:
-            from .mimetypes import guess
+            from ..mimetypes import guess
             mimetype = guess(uri)
             value = Subschema.resolve(uri)
             subschema = Schema(contentMediaType=mimetype).linked(value, base=uri)
@@ -51,6 +57,7 @@ def html_uri_list(schema: Schema, options: Options, *children, **attrs):
 
 
 content_mapping.update({
+    CSS: html_style,
     HTML: html_html,
     MARKDOWN: html_markdown,
     PNG: html_image,

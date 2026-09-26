@@ -34,6 +34,7 @@ class Options:
     unevaluated: bool = False
     debug: bool = False
     metadata: bool = False
+    input_before_output: bool = False
     evaluated: list = field(default_factory=list)
     role: dict = field(default_factory=role_mapping.copy)
     content: dict = field(default_factory=content_mapping.copy)
@@ -91,12 +92,13 @@ def html_class(schema: Schema, options: Options, *children, **attrs):
         classes = [classes]
     else:
         classes = list(classes)
-    tags = schema.get("tags")
-    if tags:
-        if isinstance(tags, list):
-            classes.extend(tags)
-        elif isinstance(tags, str):
-            classes.append(tags)
+    for subschema in schema.schemas:
+        tags = subschema.get("tags")
+        if tags:
+            if isinstance(tags, list):
+                classes.extend(tags)
+            elif isinstance(tags, str):
+                classes.append(tags)
     attrs = schema.subschema("attrs")
     atype = schema.atype()[-1]
     if isinstance(atype, str):
@@ -133,9 +135,10 @@ def html_bs4(schema: Schema, options: Options, *children, **opts):
         options = Options()
     options.__dict__.update(**opts)
     options.evaluated = []
+    
     yield from html_root(schema, options)
 
-
+@debug
 def html_frame(schema: Schema, options: Options, *children, **attrs):
     """render the boundaries and extent of the object."""
     # html core lies inside the frame
@@ -159,23 +162,30 @@ def html_patch(schema: Schema, options: Options = Options, **attrs):
 
 def html_parent(schema: Schema, options: Options, *children):
     """render the parent container around the core"""
-    insert, append = schema.get("insert", []), schema.get("append", [])
     for subschema in schema.schemas:
         parent = subschema.get("parent")
-
+        
         if parent is not None:
+            
             if not parent:
                 if parent is False:
                     break
                 continue
-            parent = schema.subschema("parent").expand_all()
-            children = list(children)
-            with options.enter(output=False):
-                yield from html_root(parent.linked(id=schema.id("parent")), options, *insert, *children, *append)
+            parent = schema.subschema("parent").override(
+                tags=html_class(schema, options)["class"]
+            ).expand_all()
+            children = children
+            insert, append = parent.get("insert", []), parent.get("append", [])
+            inserts, appends = [], []
+            for i, insert in enumerate(insert):
+                inserts.extend(list(html_root(Subschema(insert).expand(), options)))
+            for append in append:
+                appends.extend(list(html_root(Subschema(append).expand(), options)))
+            with options.enter(output=False, input=True) as options:
+                yield from html_root(parent.linked(id=schema.id("parent")), options, *inserts, *children, *appends)
             return
-    yield from insert
     yield from children
-    yield from append
+    
 
 @debug
 def html_core(schema: Schema, options: Options, *children):
@@ -186,16 +196,24 @@ def html_core(schema: Schema, options: Options, *children):
     # this separation lets us handle the form vs output accessibility independently.
     types = schema.types()
     readOnly = schema.get("readOnly", False)
+    new_options = {}
+    if readOnly:
+        new_options.update(output=True, input=False)
+        
     with options.enter(
-        input=not readOnly,
+        **new_options
     ) as new_options:
         input = new_options.input
+        applicator = html_applicator(schema, new_options, *children)
+        if new_options.input_before_output:
+            if input:
+                yield from applicator
         if new_options.output or not input:
-            content = list(html_content(schema, new_options))
-            yield new_options.el("output.read", *list(content), role="none", **html_class(schema, new_options))
-
-        if input:
-            yield from html_applicator(schema, new_options, *children)
+            content = html_content(schema, new_options)
+            yield new_options.el("output.read", *content, role="none", **html_class(schema, new_options))
+        if not new_options.input_before_output:
+            if input:
+                yield from applicator
     
     
 
@@ -207,14 +225,15 @@ def html_content(schema: Schema, options: Options, *children, **attrs):
     schema = schema.expand_all()
     content_schema = schema.subschema("contentSchema")
     if content_schema:
-        with options.enter(validate=False):
+        with options.enter(validate=False) as options:
+            
             yield from html_root(content_schema.linked(
                 schema.value(), id=schema.id(), type=schema.atype("contentSchema"),
             ), options, *children, **attrs)
         return
     
     content_type = schema.get("contentMediaType")
-
+    
     if content_type is None:
         types = schema.types()
         if {"array", "object"}.intersection(types):
@@ -360,20 +379,30 @@ def html_validator(schema: Schema, options: Options, *children):
     yield from html_role(schema, options, *children)
     yield from html_dependent_schema(schema, options, *children)
     yield from html_metadata(schema, options, *children)
+
 @debug
 def html_role(schema: Schema, options: Options, *children):
     tag = schema.get("tagName")
     if tag:
-        callable = options.tag.get(tag)
-        if callable:
-            yield from callable(schema, options, *children)
-            return
+        yield from html_tag(schema, options, *children)
+        return
+    
     role = schema.role()
     
     callable = options.role.get(role)
     if callable is None:
         callable = options.role.get(None)
     yield from callable(schema, options, *children)
+
+def html_tag(schema: Schema, options: Options, *children, **attrs):
+    tag = schema.get("tagName")
+    attrs = html_attrs(schema, options, *children, id=False, **attrs)
+    if tag:
+        callable = options.tag.get(tag)
+        if callable:
+            yield from callable(schema, options, *children, **attrs)
+        else:
+            yield options.el(tag, *children, **attrs)
 
 def html_input(schema: Schema, options: Options, *children, **attrs):
     yield from html_format(schema, options)
@@ -387,8 +416,7 @@ def html_format(schema: Schema, options: Options, *children, **attrs):
     yield from callable(schema, options)
 
 def html_input_default(schema: Schema, options: Options, *children, **attrs):
-    
-    options.el("input", value=schema.value())
+    yield options.el("input", value=schema.value())
 
 @attrs
 def html_list(schema: Schema, options: Options, *children, **attrs):
@@ -403,7 +431,7 @@ def html_list(schema: Schema, options: Options, *children, **attrs):
         patched = html_patch(subschema, options, **attrs)
         attrs = html_attrs(patched, options, *children, id=True)
         id = attrs["id"]
-        link = options.el("a", html_path(subschema, options), href=f"#{id}")
+        link = options.el("a.path", html_path(subschema, options), href=f"#{id}")
         item = options.el("li.array", link, html_root(subschema, options), **attrs)
         attrs.setdefault("aria", {}).update(dict(posinset=i+1, setsize=len(object)))
         options.evaluated.append(str(id))
@@ -447,7 +475,7 @@ def html_associationlist(schema: Schema, options: Options, *children, **attrs):
                     continue
                 subschema = subschema.linked(default)
         id = schema.id(key)
-        link = options.el("a", html_path(subschema, options), href=f"#{id}")
+        link = options.el("a.path", html_path(subschema, options), href=f"#{id}")
         patched = html_patch(subschema, options, **attrs)
         attrs = html_attrs(patched, options, *children, id=True)
         item = options.el("li", link, html_root(subschema, options), **attrs)
@@ -508,7 +536,7 @@ def html_title(schema: Schema, options: Options, *children, **attrs):
     yield options.el("span.type", *schema.types())
     
 def html_path(schema: Schema, options: Options, *children, **attrs):
-    yield options.el("span.path", *(options.el("span", str(x)) for x in schema.aid()))
+    yield options.el("span.path", *(options.el("span", str(x)) if isinstance(x, str) else options.el("data", str(x+1), value=x) for x in schema.aid()))
 
 def html_metadata(schema: Schema, options: Options, *children, **attrs):
     # this really isnt about on an off but about verbosity labels, descriptions, details¬
@@ -609,6 +637,8 @@ def html_time(schema: Schema, options: Options, *children, **attrs):
     yield options.el("time", value, *children, **attrs)
     
 def html_code(schema: Schema, options: Options, *children, **attrs):
+    # this needs links to lines of code
+    # render each line separately
     value = schema.value()
     pre = options.el("pre>code")
     options.el(pre.code, unified_string(value), *children, **attrs)
@@ -647,6 +677,13 @@ def html_toolbar(schema: Schema, options: Options, *children, **attrs):
         yield from html_list(schema, options, *children, **attrs)
     elif isinstance(object, dict):
         yield from html_associationlist(schema, options, *children, **attrs)
+
+def html_iframe(schema: Schema, options: Options, *children, **attrs):
+    if "src" not in attrs:
+        attrs["srcdoc"] = "".join(map(str, children))
+    attrs["width"] = "100%"
+    attrs["height"] = "600"
+    yield options.el("iframe", **attrs)
 
 # the role mapping definition contains commented entries for roles that are not yet implemented
 role_mapping[None] = html_plain
@@ -709,6 +746,7 @@ tag_mapping.update(
     main=role_mapping["main"],
     section=role_mapping["region"],
     time=role_mapping["time"],
+    iframe=html_iframe,
 )
 
 format_mapping.update({

@@ -2,6 +2,15 @@ $dynamicAnchor: notebook
 type: object
 contentMediaType: "application/x-ipynb+json"
 $ref: types.yaml
+parent:
+  role: main
+  insert:
+    - type: array
+      parent: 
+        role: group
+        title: headings
+        parent:
+          tagName: nav.headings
 properties:
   metadata:
     type: object
@@ -81,6 +90,7 @@ $defs:
             parent: 
               role: group
             items:
+              tags: [output]
               $ref: '#/$defs/output'
   output:
     type: object

@@ -1,33 +1,41 @@
 type: object
 $dynamicAnchor: notebook
-properties:
-    text/html:
-        readOnly: true
-        contentMediaType: text/html
-    text/markdown:
-        readOnly: true
-        contentMediaType: text/markdown
-    text/plain:
-        readOnly: true
-        contentMediaType: text/plain
-    application/json:
-        readOnly: true
-        contentMediaType: application/json
-    image/png:
-        readOnly: true
-        contentMediaType: image/png
-    image/jpeg:
-        readOnly: true
-        contentMediaType: image/jpeg
-    image/gif:
-        readOnly: true
-        contentMediaType: image/gif
-    image/svg+xml:
-        readOnly: true
-        contentMediaType: text/html
-    application/x-ipynb+json:
-        readOnly: true
-        $dynamicRef: "#notebook"
-    text/uri-list:
-        readOnly: true
-        contentMediaType: text/uri-list
+tags: [content]
+allOf:
+  - properties:
+        text/css:
+            readOnly: true
+            contentMediaType: text/css
+        text/html:
+            readOnly: true
+            contentMediaType: text/html
+        text/markdown:
+            readOnly: true
+            contentMediaType: text/markdown
+        text/plain:
+            readOnly: true
+            contentMediaType: text/plain
+        application/json:
+            readOnly: true
+            contentMediaType: application/json
+        image/png:
+            readOnly: true
+            contentMediaType: image/png
+        image/jpeg:
+            readOnly: true
+            contentMediaType: image/jpeg
+        image/gif:
+            readOnly: true
+            contentMediaType: image/gif
+        image/svg+xml:
+            readOnly: true
+            contentMediaType: text/html
+        application/x-ipynb+json:
+            readOnly: true
+            $dynamicRef: "#notebook"
+        text/uri-list:
+            readOnly: true
+            contentMediaType: text/uri-list
+  - additionalProperties: 
+        tags: [content]
+    
